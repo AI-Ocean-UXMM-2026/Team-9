@@ -8,7 +8,7 @@
   "close": "Close menu",
   "workspace": "YOUR WORKSPACE",
   "prototype": "FRONTEND PROTOTYPE",
-  "phase": "M6 · Rule-based analysis",
+  "phase": "M7 · Record completeness",
   "status": "Not implemented yet",
   "planned": "What’s planned",
   "scope": "This screen is a placeholder. Financial features will arrive in upcoming milestones.",
@@ -76,6 +76,10 @@
     "food": "Food",
     "other-expense": "Other expense",
     "uncategorized": "Uncategorized"
+  },
+  "categorySuggestion": {
+    "label": "Suggested category: {{category}}",
+    "apply": "Use suggestion"
   },
   "source": {
     "manual": "Manual entry",
@@ -309,7 +313,7 @@
     "answerTitle": "Answer from your records",
     "evidence": "Supporting records",
     "unsupportedAnswer": "I can answer questions about recorded totals, expenses, categories, owed payments, overdue items, the cash-flow forecast, and document checklist status. I can't predict loan approval or provide financial, legal, or tax advice.",
-    "documentsAnswer": "The checklist has {{completed}} completed item(s) out of {{total}} recorded. An empty checklist means document status has not been entered.",
+    "documentsAnswer": "You marked {{completed}} of {{total}} supporting document checklist items as available.",
     "overdueAnswer": "{{count}} unpaid item(s) are overdue, totaling {{amount}} MMK.",
     "outstandingAnswer": "You have {{receivable}} MMK in unpaid incoming payments and {{payable}} MMK in unpaid obligations.",
     "forecastMissingOpening": "Set an opening balance before asking about the cash-flow forecast.",
@@ -326,8 +330,34 @@
   },
   "readiness": {
     "title": "Prepare your records",
-    "nav": "Credit readiness",
-    "description": "Record completeness, not a credit score or a prediction of loan approval.",
+    "nav": "Record readiness",
+    "description": "Review how complete your records are and keep track of supporting documents.",
+    "disclaimer": "This checklist describes records you have entered or say you have available. It is not a credit score, creditworthiness assessment, or loan approval prediction. No document files are uploaded here.",
+    "recordChecksTitle": "Record checks",
+    "recordChecksHelp": "These checks update from the records saved in this browser.",
+    "documentsTitle": "Supporting document checklist",
+    "documentsHelp": "Mark items you have available. This records checklist status only; it does not upload or store document files.",
+    "checkCount": "{{completed}} of {{total}} complete",
+    "categorizedCount": "{{categorized}} of {{total}} transaction(s) have a category.",
+    "checkStatus": {
+      "complete": "Present in your records.",
+      "missing": "Not found in your records yet."
+    },
+    "checks": {
+      "opening_balance": "Opening balance and reference date",
+      "income_records": "At least one income record",
+      "expense_records": "At least one expense record",
+      "categorized_records": "Transactions have categories"
+    },
+    "documents": {
+      "income_records": "Income records or invoices",
+      "expense_receipts": "Receipts or other expense evidence",
+      "account_statements": "Bank or mobile wallet statements",
+      "business_registration": "Business registration or license, if applicable",
+      "identity_document": "Identity document, if needed for your own records"
+    },
+    "openingAction": "Set opening balance",
+    "transactionsAction": "Review transactions",
     "items": [
       "Record-completeness checks",
       "Supporting document checklist",

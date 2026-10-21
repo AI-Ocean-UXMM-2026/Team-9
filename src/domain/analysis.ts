@@ -9,6 +9,7 @@ import {
   type DuplicateReview,
   type Transaction,
 } from './types';
+import { readinessDocumentIds } from './readiness';
 
 export interface DuplicateCandidate {
   first: Transaction;
@@ -460,8 +461,10 @@ export function answerRecordedQuestion(
   )
     return unsupportedAnswer();
   if (/document|checklist|missing document/.test(query)) {
-    const completed = Object.values(data.checklist).filter(Boolean).length;
-    const total = Object.keys(data.checklist).length;
+    const total = readinessDocumentIds.length;
+    const completed = readinessDocumentIds.filter(
+      (id) => data.checklist[id],
+    ).length;
     return {
       supported: true,
       messageKey: 'chat.documentsAnswer',

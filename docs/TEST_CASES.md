@@ -1,6 +1,6 @@
 # Test cases for completed milestones
 
-Scope: completed M0–M6 behavior. These cases are for the synthetic-data prototype; do not use real financial information. Credit readiness and category suggestions remain outside this test set because they are not implemented yet.
+Scope: completed M0–M7 behavior. These cases are for the synthetic-data prototype; do not use real financial information.
 
 ## Run and reset
 
@@ -38,6 +38,7 @@ Run `npm ci`, then `npm run dev` from the repository root. Open the Vite URL and
 | TC-025 | M6 / P0 | Enter two records with the same type, amount, date, category and description, including one receipt-reviewed record. In insights, choose Keep both, reload, then edit one record. | The strong pair is surfaced with evidence; Keep both is remembered across reload. Editing changes the record fingerprint and allows the pair to be reviewed again. |
 | TC-026 | M6 / P0 | Review a possible duplicate and choose which record to remove. Separately create overdue/upcoming obligations, an uncategorized item and sufficient expense history for comparison rules. | Only the selected unlinked duplicate is removed and the resolution persists. Signals appear only when their stated data threshold is met and show the supporting dates, amounts and records. |
 | TC-027 | M6 / P0 | Ask the assistant about monthly totals, top expense, categories, overdue/outstanding items, forecast and checklist status. Then ask about loan approval and unrelated questions. | Supported answers use current local records and show evidence. Loan, advice and unsupported questions are declined without fabricating an answer. |
+| TC-028 | M7 / P1 | Open Readiness with empty records. Add income and expense records, choose categories, mark document checklist items available, reload, and change a transaction description to trigger a suggestion. | Record checks explain which records are missing or present; checklist selections persist. The screen identifies itself as record completeness, not creditworthiness or approval, and states that files are not uploaded. A matching suggestion appears as an optional action, does not change the selected category until chosen, and can be overridden. |
 
 ## Automated coverage already in the repository
 
@@ -49,6 +50,8 @@ Run `npm ci`, then `npm run dev` from the repository root. Open the Vite URL and
 - `e2e/navigation.spec.ts`: responsive navigation at 360/768/1280 px, opening balance/manual transaction flow, one-time lifecycle, monthly January-to-March catch-up, sample extraction review and confirmation, manual fallback, and upload type/empty/size validation.
 - `src/domain/reporting.test.ts`: reporting periods, settled-only totals, six-month movement, owed/payable grouping, overdue status, late-inflow regression, overdue projection and no double counting.
 - `src/domain/analysis.test.ts`: strong duplicate matching, Keep both fingerprint persistence, changed-version re-review, removed-record schema, evidence-based overdue signals, grounded answers and advice refusal.
+- `src/domain/readiness.test.ts`: transparent record checks, checklist IDs, type-aware keyword suggestions and no-match behavior.
+- `src/store/demoStore.test.ts`: readiness document status persists across store rehydration.
 - `src/store/demoStore.test.ts`: duplicate review persistence and removal of only the selected record.
 - `e2e/navigation.spec.ts`: M6 duplicate review persists across reload, assistant cites records and declines loan-prediction requests.
 

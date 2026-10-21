@@ -30,6 +30,18 @@ const exampleData = (): AppData => ({
 });
 
 describe('versioned demo persistence', () => {
+  it('persists readiness document availability as checklist state', async () => {
+    const { storage } = memoryStorage();
+    const store = createDemoStore(storage, { skipHydration: true });
+    await store.persist.rehydrate();
+    store.getState().setReadinessDocument('income_records', true);
+    expect(store.getState().data.checklist.income_records).toBe(true);
+
+    const restored = createDemoStore(storage, { skipHydration: true });
+    await restored.persist.rehydrate();
+    expect(restored.getState().data.checklist.income_records).toBe(true);
+  });
+
   it('starts with an empty workspace without reporting corrupt saved data', async () => {
     const store = createDemoStore(memoryStorage().storage, {
       skipHydration: true,

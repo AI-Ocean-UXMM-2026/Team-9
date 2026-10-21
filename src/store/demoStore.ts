@@ -13,6 +13,7 @@ import {
   type ScheduledRule,
   type Transaction,
 } from '../domain/types';
+import type { ReadinessDocumentId } from '../domain/readiness';
 import { processSchedules } from '../domain/scheduleLifecycle';
 import { systemClock, type Clock } from '../services/clock';
 import {
@@ -33,6 +34,7 @@ export interface DemoStore extends PersistedStore {
   cancelScheduleRule(ruleId: string): void;
   markOccurrenceUnpaid(occurrenceId: string): void;
   resolveDuplicate(review: DuplicateReview): void;
+  setReadinessDocument(id: ReadinessDocumentId, available: boolean): void;
   dismissStorageNotice(): void;
 }
 
@@ -336,6 +338,15 @@ export function createDemoStore(
               ...current,
               transactions,
               paymentOccurrences,
+            }),
+          });
+        },
+        setReadinessDocument: (id, available) => {
+          const current = get().data;
+          set({
+            data: appDataSchema.parse({
+              ...current,
+              checklist: { ...current.checklist, [id]: available },
             }),
           });
         },

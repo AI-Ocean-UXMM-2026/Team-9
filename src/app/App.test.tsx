@@ -51,4 +51,26 @@ describe('foundation', () => {
     );
     useDemoStore.setState({ storageNotice: null });
   });
+
+  it('shows record checks and a persistent document checklist on readiness', () => {
+    useDemoStore.getState().replaceData({
+      ...useDemoStore.getState().data,
+      checklist: {},
+    });
+    render(
+      <MemoryRouter initialEntries={['/readiness']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Prepare your records' }),
+    ).toBeVisible();
+    expect(screen.getByText(/not a credit score/i)).toBeVisible();
+    const incomeEvidence = screen.getByRole('checkbox', {
+      name: 'Income records or invoices',
+    });
+    fireEvent.click(incomeEvidence);
+    expect(useDemoStore.getState().data.checklist.income_records).toBe(true);
+    useDemoStore.getState().setReadinessDocument('income_records', false);
+  });
 });

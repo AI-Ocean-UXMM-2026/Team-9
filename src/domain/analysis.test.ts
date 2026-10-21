@@ -168,6 +168,17 @@ describe('rule-based analysis', () => {
     });
     expect(answer.evidence[0].id).toBe('expense-1');
     expect(
+      answerRecordedQuestion(
+        data,
+        '2026-10-21',
+        'What documents are available?',
+      ),
+    ).toMatchObject({
+      supported: true,
+      messageKey: 'chat.documentsAnswer',
+      values: { completed: 0, total: 5 },
+    });
+    expect(
       answerRecordedQuestion(data, '2026-10-21', 'Will I get a loan?')
         .supported,
     ).toBe(false);

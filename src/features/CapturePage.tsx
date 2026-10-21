@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { CategorySuggestion } from '../components/CategorySuggestion';
 import { BUSINESS_TIME_ZONE, type Transaction } from '../domain/types';
 import { systemClock } from '../services/clock';
 import { useDemoStore } from '../store/demoStore';
@@ -371,6 +372,18 @@ export function CapturePage() {
                 ))}
               </select>
             </label>
+            <div>
+              <CategorySuggestion
+                description={description}
+                type={type}
+                categories={categories}
+                selectedCategoryId={categoryId}
+                onApply={(suggestion) => {
+                  setCategoryId(suggestion);
+                  setReviewed(false);
+                }}
+              />
+            </div>
             <label className="grid gap-2 text-sm font-medium sm:col-span-2">
               {t('transaction.description')}
               <input

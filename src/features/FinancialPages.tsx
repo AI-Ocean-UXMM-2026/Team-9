@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { CategorySuggestion } from '../components/CategorySuggestion';
 import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
 import {
   getReportingRange,
@@ -657,6 +658,15 @@ export function SchedulesPage() {
               ))}
             </select>
           </label>
+          <div className="sm:col-span-2">
+            <CategorySuggestion
+              description={description}
+              type={type}
+              categories={categories}
+              selectedCategoryId={categoryId}
+              onApply={setCategoryId}
+            />
+          </div>
           <label className="grid gap-2 text-sm font-medium sm:col-span-2">
             {t('transaction.description')}
             <input

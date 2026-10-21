@@ -6,6 +6,7 @@ import { screens } from './routes';
 import { Placeholder } from '../features/Placeholder';
 import { CapturePage } from '../features/CapturePage';
 import { ChatPage, ForecastPage, OwedPage } from '../features/AnalysisPages';
+import { ReadinessPage } from '../features/ReadinessPage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
 import {
@@ -155,6 +156,8 @@ export function App() {
                         <ChatPage />
                       ) : id === 'settings' ? (
                         <SettingsPage />
+                      ) : id === 'readiness' ? (
+                        <ReadinessPage />
                       ) : (
                         <Placeholder id={id} />
                       )
