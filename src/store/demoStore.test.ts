@@ -29,6 +29,51 @@ const exampleData = (): AppData => ({
 });
 
 describe('versioned demo persistence', () => {
+  it('saves a manual transaction, corrects the same ID, then supports delete and undo', () => {
+    const store = createDemoStore(memoryStorage().storage, {
+      skipHydration: true,
+    });
+    store.getState().setOpeningBalance({
+      amount: 100_000,
+      referenceAt: '2026-10-21T08:00:00+06:30',
+      timeZone: 'Asia/Rangoon',
+    });
+    const record = {
+      id: 'manual-1',
+      type: 'expense' as const,
+      amount: 12_000,
+      currency: 'MMK' as const,
+      date: '2026-10-21',
+      dueDate: '2026-10-22',
+      openingDayDisposition: 'after_reference' as const,
+      categoryId: 'supplies',
+      counterpartyId: null,
+      cashStatus: 'pending' as const,
+      confirmationStatus: 'not_applicable' as const,
+      source: 'manual' as const,
+      ocrReviewStatus: 'not_applicable' as const,
+      createdAt: '2026-10-21T02:00:00Z',
+      updatedAt: '2026-10-21T02:00:00Z',
+    };
+    store.getState().saveTransaction(record);
+    store.getState().saveTransaction({
+      ...record,
+      amount: 10_000,
+      cashStatus: 'settled',
+      dueDate: undefined,
+      updatedAt: '2026-10-21T03:00:00Z',
+    });
+    expect(store.getState().data.transactions).toHaveLength(1);
+    expect(store.getState().data.transactions[0]).toMatchObject({
+      id: 'manual-1',
+      amount: 10_000,
+      createdAt: record.createdAt,
+    });
+    const deleted = store.getState().deleteTransaction('manual-1');
+    expect(store.getState().data.transactions).toHaveLength(0);
+    store.getState().restoreTransaction(deleted!);
+    expect(store.getState().data.transactions[0].id).toBe('manual-1');
+  });
   it('validates updates and persists the single versioned app-data record', async () => {
     const { storage, values } = memoryStorage();
     const store = createDemoStore(storage, { skipHydration: true });

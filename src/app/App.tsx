@@ -6,6 +6,11 @@ import { screens } from './routes';
 import { Placeholder } from '../features/Placeholder';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
+import {
+  DashboardPage,
+  SettingsPage,
+  TransactionsPage,
+} from '../features/FinancialPages';
 export function App() {
   const { t } = useTranslation();
   const storageNotice = useDemoStore((state) => state.storageNotice);
@@ -122,7 +127,17 @@ export function App() {
                   <Route
                     key={id}
                     path={path}
-                    element={<Placeholder id={id} />}
+                    element={
+                      id === 'dashboard' ? (
+                        <DashboardPage />
+                      ) : id === 'transactions' ? (
+                        <TransactionsPage />
+                      ) : id === 'settings' ? (
+                        <SettingsPage />
+                      ) : (
+                        <Placeholder id={id} />
+                      )
+                    }
                   />
                 ))}
                 <Route

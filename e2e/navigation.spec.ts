@@ -31,7 +31,8 @@ for (const width of [360, 768, 1280]) {
           'Demo mode: simulated data. Do not enter real financial information.',
         ),
       ).toBeVisible();
-      await expect(page.getByText('Not implemented yet')).toBeVisible();
+      if (!['Transactions', 'Dashboard', 'Settings'].includes(name))
+        await expect(page.getByText('Not implemented yet')).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -69,4 +70,24 @@ test('skip link supports keyboard navigation', async ({ page }) => {
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();
+});
+
+test('opening balance and manual transaction workflow', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Opening amount (MMK)').fill('100000');
+  await page.getByRole('button', { name: 'Save opening balance' }).click();
+  await expect(page.getByText('Opening balance saved.')).toBeVisible();
+  await page.getByRole('link', { name: 'View transactions' }).click();
+  await page.getByLabel('Type').selectOption('income');
+  await page.getByLabel('Amount (MMK)').fill('2500');
+  await page.getByLabel('Category').selectOption('sales');
+  await page.getByLabel('Description').fill('Market sale');
+  await page.getByLabel('It happened after the opening balance time').check();
+  await page.getByRole('button', { name: 'Save transaction' }).click();
+  await expect(page.getByText('Market sale')).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByLabel('Amount (MMK)')).toHaveValue('2500');
+  await page.getByLabel('Amount (MMK)').fill('3000');
+  await page.getByRole('button', { name: 'Save correction' }).click();
+  await expect(page.getByText('3,000 MMK')).toBeVisible();
 });
