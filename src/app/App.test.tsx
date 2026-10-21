@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { App } from './App';
 import { useDemoStore } from '../store/demoStore';
 describe('foundation', () => {
-  it('keeps the demo disclosure and placeholder after navigation', () => {
+  it('keeps the demo disclosure and grounded assistant after navigation', () => {
     render(
       <MemoryRouter>
         <App />
@@ -19,8 +19,8 @@ describe('foundation', () => {
         'Demo mode: simulated data. Do not enter real financial information.',
       ),
     ).toBeVisible();
-    expect(screen.getByText('Not implemented yet')).toBeVisible();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Ask about your records')).toBeVisible();
+    expect(screen.queryByText('Not implemented yet')).not.toBeInTheDocument();
   });
   it('recovers unknown addresses', () => {
     render(

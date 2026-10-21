@@ -410,15 +410,26 @@ export const appDataSchema = appDataShape.superRefine((data, context) => {
       });
   });
   data.duplicateReviews.forEach((review, index) => {
-    if (
-      !transactions.has(review.firstTransactionId) ||
-      !transactions.has(review.secondTransactionId)
-    )
+    const firstExists = transactions.has(review.firstTransactionId);
+    const secondExists = transactions.has(review.secondTransactionId);
+    const retainedId =
+      review.resolution === 'duplicate_removed'
+        ? review.firstTransactionId === review.redundantTransactionId
+          ? review.secondTransactionId
+          : review.firstTransactionId
+        : null;
+    const validReferences =
+      review.resolution === 'keep_both'
+        ? firstExists && secondExists
+        : retainedId !== null &&
+          transactions.has(retainedId) &&
+          !transactions.has(review.redundantTransactionId!);
+    if (!validReferences)
       context.addIssue({
         code: 'custom',
         path: ['duplicateReviews', index],
         message:
-          'Duplicate review must reference both retained transaction records.',
+          'Duplicate review must retain both records or retain one and remove the chosen duplicate.',
       });
   });
 });

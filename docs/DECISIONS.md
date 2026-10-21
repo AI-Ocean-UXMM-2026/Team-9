@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M5 are complete; review M5 before beginning M6.
+Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M6 are complete; review M6 before beginning M7.
 
 ## Agreed product decisions
 
@@ -18,6 +18,7 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 12. M3b monthly rules generate one date per eligible month, clamping a requested day (such as 31) to that month's last day while retaining the requested day for later months. Dates before the start date and after the inclusive end date are skipped. App load catches up every due occurrence once and creates scheduled, forecast-only occurrences through a rolling 365-day horizon. Canceling a monthly rule removes its future scheduled occurrences and preserves processed history.
 13. M4 accepts nonempty JPEG, PNG and WebP images up to 5 MB. A local preview and clearly labelled sample extraction help demonstrate the review flow; the extraction is not OCR and does not inspect image pixels. Users can correct every field or enter details manually when an image is unreadable. A confirmation checkbox is required before saving. The image stays in the current browser tab, is not sent to a service or stored, and only the confirmed transaction fields persist. Image-derived records use `source: receipt_image` and `ocrReviewStatus: reviewed`; manual fallback without an image uses a manual source.
 14. M5 reporting periods include settled transactions only; pending items remain in owed totals and forecast inputs. The dashboard offers this month, last month and rolling 30 days, and compares six months of settled income and expenses. Outstanding income and expense are shown separately, with overdue state derived from due date. The 14-day forecast starts from recorded available balance, brings overdue pending obligations to today, counts scheduled occurrences once, and shifts expected inflows by seven days in the delayed scenario. The 180,000 shortfall is a regression result from the specified inputs, never a fixed display value.
+15. M6 insights are deterministic rules with the observation and supporting records shown separately. Spending spike and concentration rules require at least three settled expenses in each comparison as applicable; unusual expense requires five earlier same-category records and an amount above twice their median. Duplicate candidates require matching type, amount, currency, date, category, and a matching description or counterparty; scheduled payments are excluded. Persist each user decision against the candidate's record-version fingerprint. Keep both preserves the pair; removing a selected record removes it from transactions and retains the resolution. Rule-based chat supports a bounded set of record questions and declines unsupported requests, credit approval predictions, and financial/legal/tax advice.
 
 ## Implementation assumptions (not new product decisions)
 

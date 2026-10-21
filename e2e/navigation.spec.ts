@@ -40,6 +40,7 @@ for (const width of [360, 768, 1280]) {
           'Upload & review',
           'Owed payments',
           'Forecast & insights',
+          'Ask AI',
         ].includes(name)
       )
         await expect(page.getByText('Not implemented yet')).toBeVisible();
@@ -119,6 +120,93 @@ test('M5 dashboard periods, outstanding screen and forecast are available', asyn
     page.getByText(/Estimated from your recorded available balance/),
   ).toBeVisible();
   await expect(page.getByRole('table').getByRole('row')).toHaveCount(15);
+});
+
+test('M6 remembers duplicate review and grounded chat cites local records', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('fintech-companion-demo-v1')) return;
+    const timestamp = '2026-10-18T12:00:00Z';
+    const makeTransaction = (
+      id: string,
+      source: 'manual' | 'receipt_image',
+    ) => ({
+      id,
+      type: 'expense',
+      amount: 15000,
+      currency: 'MMK',
+      date: '2026-10-18',
+      categoryId: 'supplies',
+      counterpartyId: null,
+      description: 'Shop supplies',
+      cashStatus: 'settled',
+      confirmationStatus: 'not_applicable',
+      source,
+      ocrReviewStatus:
+        source === 'receipt_image' ? 'reviewed' : 'not_applicable',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    const data = {
+      openingBalance: null,
+      transactions: [
+        makeTransaction('manual-1', 'manual'),
+        makeTransaction('receipt-1', 'receipt_image'),
+      ],
+      counterparties: [],
+      categories: [
+        { id: 'client-income', name: 'Client income', type: 'income' },
+        { id: 'sales', name: 'Sales', type: 'income' },
+        { id: 'other-income', name: 'Other income', type: 'income' },
+        { id: 'supplies', name: 'Supplies', type: 'expense' },
+        { id: 'inventory', name: 'Inventory', type: 'expense' },
+        { id: 'transport', name: 'Transport', type: 'expense' },
+        { id: 'utilities', name: 'Utilities', type: 'expense' },
+        { id: 'rent', name: 'Rent', type: 'expense' },
+        { id: 'marketing', name: 'Marketing', type: 'expense' },
+        { id: 'food', name: 'Food', type: 'expense' },
+        { id: 'other-expense', name: 'Other expense', type: 'expense' },
+      ],
+      scheduleRules: [],
+      paymentOccurrences: [],
+      duplicateReviews: [],
+      checklist: {},
+    };
+    localStorage.setItem(
+      'fintech-companion-demo-v1',
+      JSON.stringify({ state: { data, storageNotice: null }, version: 1 }),
+    );
+  });
+  await page.goto('/#/insights');
+  await expect(
+    page.getByRole('heading', { name: 'Duplicate review' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Possible duplicate transactions', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Keep both' }).click();
+  await expect(
+    page.getByText('No unreviewed exact-match pairs found.'),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByText('No unreviewed exact-match pairs found.'),
+  ).toBeVisible();
+
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Ask AI' })
+    .click();
+  await page
+    .getByLabel('Ask about your records')
+    .fill('What are my expenses this month?');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(page.getByText(/expenses are 30,000 MMK/)).toBeVisible();
+  await expect(page.getByText('Supporting records')).toBeVisible();
+  await page.getByLabel('Ask about your records').fill('Will I get a loan?');
+  await page.getByRole('button', { name: 'Ask', exact: true }).click();
+  await expect(page.getByText(/I can't predict loan approval/)).toBeVisible();
 });
 
 test('opening balance and manual transaction workflow', async ({ page }) => {

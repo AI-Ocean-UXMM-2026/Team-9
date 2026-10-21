@@ -1,11 +1,20 @@
+import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import {
+  answerRecordedQuestion,
+  buildRuleInsights,
+  duplicateReviewId,
+  findPossibleDuplicates,
+} from '../domain/analysis';
 import {
   buildCashFlowForecast,
   summarizeOutstanding,
 } from '../domain/reporting';
 import { systemClock } from '../services/clock';
 import { useDemoStore } from '../store/demoStore';
+import type { DuplicateReview } from '../domain/types';
 
 const money = (amount: number | null) =>
   amount === null
@@ -13,6 +22,23 @@ const money = (amount: number | null) =>
     : new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(
         amount,
       );
+
+function translationValues(
+  values: Record<string, string | number>,
+  t: TFunction,
+): Record<string, string | number> {
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [
+      key,
+      key === 'category' && typeof value === 'string'
+        ? t(`category.${value}`)
+        : typeof value === 'number' &&
+            !['count', 'percent', 'completed', 'total'].includes(key)
+          ? money(value)
+          : value,
+    ]),
+  );
+}
 
 export function OwedPage() {
   const { t } = useTranslation();
@@ -161,6 +187,8 @@ export function ForecastPage() {
           {t('insights.description')}
         </p>
       </section>
+      <RuleInsightsPanel />
+      <DuplicateReviewPanel />
       {!data.openingBalance ? (
         <p className="rounded-xl bg-amber-50 p-4 text-amber-950">
           {t('forecast.openingRequired')}{' '}
@@ -250,6 +278,268 @@ export function ForecastPage() {
           </section>
         </>
       )}
+    </>
+  );
+}
+
+function RuleInsightsPanel() {
+  const { t } = useTranslation();
+  const data = useDemoStore((state) => state.data);
+  const insights = buildRuleInsights(data, systemClock.today());
+  return (
+    <section className="mb-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+      <h2 className="text-xl font-semibold">{t('insights.ruleTitle')}</h2>
+      <p className="mt-1 text-sm text-muted">{t('insights.ruleHelp')}</p>
+      {insights.length ? (
+        <ul className="mt-4 grid gap-4">
+          {insights.map((insight) => (
+            <li
+              key={insight.id}
+              className={`rounded-2xl p-4 ${insight.severity === 'attention' ? 'bg-amber-50' : 'bg-[#edf3ec]'}`}
+            >
+              <h3 className="font-semibold">
+                {t(`insights.${insight.titleKey}`)}
+              </h3>
+              <p className="mt-2">
+                {t(
+                  `insights.${insight.observedKey}`,
+                  translationValues(insight.values, t),
+                )}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {t(`insights.${insight.interpretationKey}`)}
+              </p>
+              {insight.evidence.length ? (
+                <ul className="mt-3 space-y-1 border-t border-black/10 pt-3 text-sm">
+                  {insight.evidence.map((item) => (
+                    <li key={item.id}>
+                      {t('insights.evidenceRow', {
+                        description: item.descriptionKey
+                          ? t(`insights.${item.descriptionKey}`)
+                          : item.description || t('insights.unnamedRecord'),
+                        date: item.date,
+                        amount: money(item.amount),
+                        due: item.dueDate
+                          ? t('insights.evidenceDueDate', {
+                              date: item.dueDate,
+                            })
+                          : '',
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-muted">{t('insights.noSignals')}</p>
+      )}
+    </section>
+  );
+}
+
+function DuplicateReviewPanel() {
+  const { t } = useTranslation();
+  const data = useDemoStore((state) => state.data);
+  const resolveDuplicate = useDemoStore((state) => state.resolveDuplicate);
+  const candidates = findPossibleDuplicates(data);
+  const [removeIds, setRemoveIds] = useState<Record<string, string>>({});
+
+  function review(
+    candidate: (typeof candidates)[number],
+    resolution: 'keep_both' | 'duplicate_removed',
+  ) {
+    const redundantTransactionId =
+      removeIds[candidate.fingerprint] ?? candidate.second.id;
+    if (
+      resolution === 'duplicate_removed' &&
+      !window.confirm(t('insights.confirmRemove'))
+    )
+      return;
+    const item: DuplicateReview = {
+      id: duplicateReviewId(
+        candidate.first.id,
+        candidate.second.id,
+        candidate.fingerprint,
+      ),
+      firstTransactionId: candidate.first.id,
+      secondTransactionId: candidate.second.id,
+      fingerprint: candidate.fingerprint,
+      resolution,
+      ...(resolution === 'duplicate_removed' ? { redundantTransactionId } : {}),
+      reviewedAt: systemClock.now().toISOString(),
+    };
+    resolveDuplicate(item);
+  }
+
+  return (
+    <section className="mb-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+      <h2 className="text-xl font-semibold">
+        {t('insights.duplicateReviewTitle')}
+      </h2>
+      <p className="mt-1 text-sm text-muted">{t('insights.duplicatesHelp')}</p>
+      {candidates.length ? (
+        <ul className="mt-4 divide-y divide-[#e4e9e2]">
+          {candidates.map((candidate) => (
+            <li key={candidate.fingerprint} className="py-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[candidate.first, candidate.second].map((transaction) => (
+                  <article
+                    key={transaction.id}
+                    className="rounded-xl bg-canvas p-4"
+                  >
+                    <p className="font-semibold">
+                      {transaction.description || t('insights.unnamedRecord')}
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {t(`source.${transaction.source}`)}
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {transaction.date} ·{' '}
+                      {t(`transaction.${transaction.type}`)} ·{' '}
+                      {t(`transaction.${transaction.cashStatus}`)}
+                    </p>
+                    <p className="mt-1 font-medium">
+                      {money(transaction.amount)} MMK
+                    </p>
+                  </article>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap items-end gap-3">
+                <label className="grid gap-1 text-sm font-medium">
+                  {t('insights.removeChoice')}
+                  <select
+                    className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
+                    value={
+                      removeIds[candidate.fingerprint] ?? candidate.second.id
+                    }
+                    onChange={(event) =>
+                      setRemoveIds((current) => ({
+                        ...current,
+                        [candidate.fingerprint]: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value={candidate.first.id}>
+                      {t('insights.firstChoice', {
+                        source: t(`source.${candidate.first.source}`),
+                        description:
+                          candidate.first.description ||
+                          t('insights.unnamedRecord'),
+                      })}
+                    </option>
+                    <option value={candidate.second.id}>
+                      {t('insights.secondChoice', {
+                        source: t(`source.${candidate.second.source}`),
+                        description:
+                          candidate.second.description ||
+                          t('insights.unnamedRecord'),
+                      })}
+                    </option>
+                  </select>
+                </label>
+                <button
+                  className="min-h-11 rounded-lg bg-accent px-4 py-2 font-semibold text-white"
+                  onClick={() => review(candidate, 'keep_both')}
+                >
+                  {t('insights.keepBoth')}
+                </button>
+                <button
+                  className="min-h-11 rounded-lg border border-[#bccbc0] px-4 py-2 font-semibold"
+                  onClick={() => review(candidate, 'duplicate_removed')}
+                >
+                  {t('insights.removeDuplicate')}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-muted">{t('insights.noDuplicates')}</p>
+      )}
+    </section>
+  );
+}
+
+export function ChatPage() {
+  const { t } = useTranslation();
+  const data = useDemoStore((state) => state.data);
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState<ReturnType<
+    typeof answerRecordedQuestion
+  > | null>(null);
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    setAnswer(answerRecordedQuestion(data, systemClock.today(), question));
+  }
+  return (
+    <>
+      <section className="mb-7">
+        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
+          {t('prototype')}
+        </p>
+        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
+          {t('chat.title')}
+        </h1>
+        <p className="mt-4 max-w-2xl text-lg text-muted">
+          {t('chat.description')}
+        </p>
+      </section>
+      <p className="mb-5 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
+        {t('chat.limits')}
+      </p>
+      <form
+        className="flex flex-col gap-3 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:flex-row sm:p-7"
+        onSubmit={submit}
+      >
+        <label className="grid flex-1 gap-2 text-sm font-medium">
+          {t('chat.questionLabel')}
+          <input
+            className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            maxLength={300}
+            placeholder={t('chat.questionPlaceholder')}
+            required
+          />
+        </label>
+        <button className="min-h-12 self-end rounded-xl bg-accent px-5 font-semibold text-white">
+          {t('chat.ask')}
+        </button>
+      </form>
+      {answer ? (
+        <section
+          className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7"
+          aria-live="polite"
+        >
+          <h2 className="font-semibold">{t('chat.answerTitle')}</h2>
+          <p className="mt-2">
+            {t(answer.messageKey, translationValues(answer.values, t))}
+          </p>
+          {answer.evidence.length ? (
+            <div className="mt-4 border-t border-[#e4e9e2] pt-4">
+              <h3 className="text-sm font-semibold">{t('chat.evidence')}</h3>
+              <ul className="mt-2 space-y-2 text-sm text-muted">
+                {answer.evidence.map((item) => (
+                  <li key={item.id}>
+                    {t('insights.evidenceRow', {
+                      description: item.descriptionKey
+                        ? t(`insights.${item.descriptionKey}`)
+                        : item.description || t('insights.unnamedRecord'),
+                      date: item.date,
+                      amount: money(item.amount),
+                      due: item.dueDate
+                        ? t('insights.evidenceDueDate', { date: item.dueDate })
+                        : '',
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
     </>
   );
 }

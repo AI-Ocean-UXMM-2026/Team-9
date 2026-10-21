@@ -39,6 +39,61 @@ describe('versioned demo persistence', () => {
     expect(store.getState().storageNotice).toBeNull();
   });
 
+  it('persists Keep both and removes only the selected duplicate record', () => {
+    const store = createDemoStore(memoryStorage().storage, {
+      skipHydration: true,
+    });
+    const transaction = (id: string) => ({
+      id,
+      type: 'expense' as const,
+      amount: 12_000,
+      currency: 'MMK' as const,
+      date: '2026-10-10',
+      categoryId: 'supplies',
+      counterpartyId: null,
+      description: 'Packaging supplies',
+      cashStatus: 'settled' as const,
+      confirmationStatus: 'not_applicable' as const,
+      source: 'manual' as const,
+      ocrReviewStatus: 'not_applicable' as const,
+      createdAt: '2026-10-10T00:00:00Z',
+      updatedAt: '2026-10-10T00:00:00Z',
+    });
+    store.getState().replaceData({
+      ...exampleData(),
+      transactions: [transaction('first'), transaction('second')],
+    });
+    store.getState().resolveDuplicate({
+      id: 'review-keep',
+      firstTransactionId: 'first',
+      secondTransactionId: 'second',
+      fingerprint: 'version-a',
+      resolution: 'keep_both',
+      reviewedAt: '2026-10-21T00:00:00Z',
+    });
+    expect(store.getState().data.transactions).toHaveLength(2);
+    expect(store.getState().data.duplicateReviews[0].resolution).toBe(
+      'keep_both',
+    );
+
+    store.getState().resolveDuplicate({
+      id: 'review-remove',
+      firstTransactionId: 'first',
+      secondTransactionId: 'second',
+      fingerprint: 'version-b',
+      resolution: 'duplicate_removed',
+      redundantTransactionId: 'second',
+      reviewedAt: '2026-10-21T00:01:00Z',
+    });
+    expect(store.getState().data.transactions.map((item) => item.id)).toEqual([
+      'first',
+    ]);
+    expect(store.getState().data.duplicateReviews).toHaveLength(1);
+    expect(
+      store.getState().data.duplicateReviews[0].redundantTransactionId,
+    ).toBe('second');
+  });
+
   it('processes a due one-time schedule once and restores it as unpaid on request', () => {
     const store = createDemoStore(memoryStorage().storage, {
       skipHydration: true,

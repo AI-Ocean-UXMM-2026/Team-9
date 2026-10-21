@@ -8,6 +8,7 @@ import {
   scheduledRuleSchema,
   occurrenceIdFor,
   type AppData,
+  type DuplicateReview,
   type PersistedStore,
   type ScheduledRule,
   type Transaction,
@@ -31,6 +32,7 @@ export interface DemoStore extends PersistedStore {
   processDueSchedules(clock?: Clock): void;
   cancelScheduleRule(ruleId: string): void;
   markOccurrenceUnpaid(occurrenceId: string): void;
+  resolveDuplicate(review: DuplicateReview): void;
   dismissStorageNotice(): void;
 }
 
@@ -153,6 +155,40 @@ export function createDemoStore(
             data: appDataSchema.parse({
               ...current,
               transactions: [...current.transactions, transaction],
+            }),
+          });
+        },
+        resolveDuplicate: (review) => {
+          const current = get().data;
+          const candidate = current.transactions.find(
+            (transaction) => transaction.id === review.redundantTransactionId,
+          );
+          if (review.resolution === 'duplicate_removed') {
+            if (!candidate || candidate.paymentOccurrenceId)
+              throw new Error('The selected duplicate cannot be removed.');
+          }
+          const duplicateReviews = [
+            ...current.duplicateReviews.filter(
+              (item) =>
+                item.id !== review.id &&
+                (review.resolution !== 'duplicate_removed' ||
+                  (item.firstTransactionId !== review.redundantTransactionId &&
+                    item.secondTransactionId !==
+                      review.redundantTransactionId)),
+            ),
+            review,
+          ];
+          set({
+            data: appDataSchema.parse({
+              ...current,
+              transactions:
+                review.resolution === 'duplicate_removed'
+                  ? current.transactions.filter(
+                      (transaction) =>
+                        transaction.id !== review.redundantTransactionId,
+                    )
+                  : current.transactions,
+              duplicateReviews,
             }),
           });
         },
