@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M7 are complete; review M7 before beginning M8.
+Updated 22 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M8 are complete; review M8 before any P2 scope is considered.
 
 ## Agreed product decisions
 

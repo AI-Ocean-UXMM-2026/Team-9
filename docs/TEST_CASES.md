@@ -1,6 +1,6 @@
 # Test cases for completed milestones
 
-Scope: completed M0–M7 behavior. These cases are for the synthetic-data prototype; do not use real financial information.
+Scope: completed M0–M8 behavior. These cases are for the synthetic-data prototype; do not use real financial information.
 
 ## Run and reset
 
@@ -39,6 +39,9 @@ Run `npm ci`, then `npm run dev` from the repository root. Open the Vite URL and
 | TC-026 | M6 / P0 | Review a possible duplicate and choose which record to remove. Separately create overdue/upcoming obligations, an uncategorized item and sufficient expense history for comparison rules. | Only the selected unlinked duplicate is removed and the resolution persists. Signals appear only when their stated data threshold is met and show the supporting dates, amounts and records. |
 | TC-027 | M6 / P0 | Ask the assistant about monthly totals, top expense, categories, overdue/outstanding items, forecast and checklist status. Then ask about loan approval and unrelated questions. | Supported answers use current local records and show evidence. Loan, advice and unsupported questions are declined without fabricating an answer. |
 | TC-028 | M7 / P1 | Open Readiness with empty records. Add income and expense records, choose categories, mark document checklist items available, reload, and change a transaction description to trigger a suggestion. | Record checks explain which records are missing or present; checklist selections persist. The screen identifies itself as record completeness, not creditworthiness or approval, and states that files are not uploaded. A matching suggestion appears as an optional action, does not change the selected category until chosen, and can be overridden. |
+| TC-029 | M8 / P1 | Put malformed JSON in the app's local storage key and reload. Then add a transaction description containing harmless HTML-like text. | The app visibly resets to an empty workspace after storage recovery. User text displays as text; it does not create an element or run an event handler. |
+| TC-030 | M8 / P1 | Create a future monthly schedule, cancel it, reload, and inspect the status. Run the production build and inspect its CSP. | Cancellation remains visible after reload. The built CSP excludes the loopback HMR WebSocket exception, while the dev server can still connect for HMR. |
+| TC-031 | M8 / P1 | Run the Chromium suite against the development server and inspect its CSP. | Development CSP permits only the loopback HMR WebSocket and inline style behavior needed by Vite; inline/evaluated scripts remain blocked. The production CSP check continues to enforce the stricter policy. |
 
 ## Automated coverage already in the repository
 
@@ -54,7 +57,9 @@ Run `npm ci`, then `npm run dev` from the repository root. Open the Vite URL and
 - `src/store/demoStore.test.ts`: readiness document status persists across store rehydration.
 - `src/store/demoStore.test.ts`: duplicate review persistence and removal of only the selected record.
 - `e2e/navigation.spec.ts`: M6 duplicate review persists across reload, assistant cites records and declines loan-prediction requests.
+- `e2e/navigation.spec.ts`: M7 checklist persistence and optional category suggestions; M8 malformed-storage recovery, safe rendering of HTML-like descriptions, monthly cancellation persistence and correction after reload.
+- `scripts/verify-production-csp.mjs`: checks required production CSP directives and rejects development-only WebSocket/inline-style permissions.
 
 ## Current gaps
 
-The responsive browser suite does not yet exercise a real screen reader or all keyboard interactions. There is no automated end-to-end test for malformed storage recovery, canceling a monthly rule, or transaction correction across a reload; domain/store tests cover parts of those behaviors. Insight thresholds are conservative demo rules, and assistant intent matching supports a bounded set of question patterns rather than natural-language reasoning.
+The responsive browser suite does not exercise a real screen reader or every keyboard interaction. Insight thresholds are conservative demo rules, and assistant intent matching supports a bounded set of question patterns rather than natural-language reasoning. The prototype is not production-ready for real financial data; see [SECURITY.md](SECURITY.md).

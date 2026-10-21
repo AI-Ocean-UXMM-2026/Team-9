@@ -10,7 +10,7 @@ for (const width of [360, 768, 1280]) {
       'Schedules',
       'Forecast & insights',
       'Ask AI',
-      'Credit readiness',
+      'Record readiness',
       'Settings',
       'Dashboard',
     ]) {
@@ -41,6 +41,7 @@ for (const width of [360, 768, 1280]) {
           'Owed payments',
           'Forecast & insights',
           'Ask AI',
+          'Record readiness',
         ].includes(name)
       )
         await expect(page.getByText('Not implemented yet')).toBeVisible();
@@ -81,6 +82,18 @@ test('skip link supports keyboard navigation', async ({ page }) => {
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();
+});
+
+test('development CSP allows only the Vite HMR exceptions needed for local styling', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const policy = await page
+    .locator('meta[http-equiv="Content-Security-Policy"]')
+    .getAttribute('content');
+  expect(policy).toContain("connect-src 'self' ws://127.0.0.1:*");
+  expect(policy).toContain("style-src 'self' 'unsafe-inline'");
+  expect(policy).not.toMatch(/script-src[^;]*'unsafe-(?:inline|eval)'/);
 });
 
 test('M5 dashboard periods, outstanding screen and forecast are available', async ({
@@ -224,11 +237,104 @@ test('opening balance and manual transaction workflow', async ({ page }) => {
   await page.getByLabel('It happened after the opening balance time').check();
   await page.getByRole('button', { name: 'Save transaction' }).click();
   await expect(page.getByText('Market sale')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Market sale')).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.getByLabel('Amount (MMK)')).toHaveValue('2500');
   await page.getByLabel('Amount (MMK)').fill('3000');
   await page.getByRole('button', { name: 'Save correction' }).click();
   await expect(page.getByText('3,000 MMK')).toBeVisible();
+});
+
+test('M7 readiness checklist persists and category suggestions stay optional', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByLabel('Opening amount (MMK)').fill('100000');
+  await page.getByRole('button', { name: 'Save opening balance' }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Record readiness' })
+    .click();
+  await expect(
+    page.getByText(/not a credit score, creditworthiness assessment/i),
+  ).toBeVisible();
+  const incomeDocuments = page.getByRole('checkbox', {
+    name: 'Income records or invoices',
+  });
+  await incomeDocuments.check();
+  await page.reload();
+  await expect(
+    page.getByRole('checkbox', { name: 'Income records or invoices' }),
+  ).toBeChecked();
+
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Transactions' })
+    .click();
+  await page.getByLabel('Description').fill('Taxi delivery');
+  await page.getByRole('button', { name: 'Use suggestion' }).click();
+  await expect(page.getByLabel('Category')).toHaveValue('transport');
+  await page.getByLabel('Category').selectOption('food');
+  await expect(page.getByLabel('Category')).toHaveValue('food');
+});
+
+test('malformed saved data recovers with a visible notice', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('fintech-companion-demo-v1', '{malformed');
+  });
+  await page.goto('/');
+  await expect(
+    page.getByText('Saved demo data could not be read and has been reset.'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Your financial picture' }),
+  ).toBeVisible();
+});
+
+test('transaction descriptions render as text, not executable markup', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/');
+  await page.getByLabel('Opening amount (MMK)').fill('100000');
+  await page.getByRole('button', { name: 'Save opening balance' }).click();
+  await page.getByRole('link', { name: 'View transactions' }).click();
+  const text = '<img src=x onerror=window.__xss=1>';
+  await page.getByLabel('Type').selectOption('income');
+  await page.getByLabel('Amount (MMK)').fill('2500');
+  await page.getByLabel('Category').selectOption('sales');
+  await page.getByLabel('Description').fill(text);
+  await page.getByLabel('It happened after the opening balance time').check();
+  await page.getByRole('button', { name: 'Save transaction' }).click();
+  await expect(page.getByText(text, { exact: true })).toBeVisible();
+  await expect(page.locator('img[src="x"]')).toHaveCount(0);
+  expect(
+    await page.evaluate(() => (window as Window & { __xss?: number }).__xss),
+  ).toBeUndefined();
+});
+
+test('future monthly schedules can be canceled', async ({ page }) => {
+  await page.goto('/#/schedules');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByLabel('Repeats').selectOption('monthly');
+  await page.getByLabel('Amount (MMK)').fill('35000');
+  await page.getByLabel('First eligible date').fill('2026-10-31');
+  await page.getByLabel('Day of month (1–31)').fill('31');
+  await page.getByLabel('Last eligible date (optional)').fill('2026-12-31');
+  await page.getByLabel('Description').fill('Future monthly rent');
+  await page.getByRole('button', { name: 'Save schedule' }).click();
+  await expect(page.getByText('2026-10-31 · 35,000 MMK')).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Cancel schedule' }).click();
+  await expect(page.getByText('Canceled')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Canceled')).toBeVisible();
 });
 
 test('one-time schedule is assumed once and can be marked unpaid', async ({
