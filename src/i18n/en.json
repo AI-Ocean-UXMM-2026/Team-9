@@ -8,7 +8,7 @@
   "close": "Close menu",
   "workspace": "YOUR WORKSPACE",
   "prototype": "FRONTEND PROTOTYPE",
-  "phase": "M3a · One-time schedules",
+  "phase": "M4 · Simulated receipt review",
   "status": "Not implemented yet",
   "planned": "What’s planned",
   "scope": "This screen is a placeholder. Financial features will arrive in upcoming milestones.",
@@ -124,11 +124,30 @@
   "capture": {
     "title": "Upload & review",
     "nav": "Upload & review",
-    "description": "Turn sample receipts into records you can review.",
+    "description": "Review a receipt or screenshot and confirm its details before saving a record.",
+    "uploadTitle": "Choose a receipt or screenshot",
+    "privacy": "Prototype only: the image stays in this browser tab and is never sent to a service. Only reviewed transaction fields are saved; the image preview is discarded when you leave this screen.",
+    "imageLabel": "Receipt or screenshot (JPEG, PNG, or WebP; up to 5 MB)",
+    "fileTypeError": "Choose a JPEG, PNG, or WebP image.",
+    "emptyFileError": "That image file is empty. Choose another file or enter the details manually.",
+    "fileSizeError": "The image must be 5 MB or smaller. Choose a smaller image or enter the details manually.",
+    "previewAlt": "Local preview of the selected receipt or screenshot",
+    "simulate": "Simulate sample extraction",
+    "manual": "Image unreadable or unavailable · enter manually",
+    "sampleNotice": "Sample extraction · simulated, not OCR. These example fields may be wrong; review and correct each one.",
+    "manualNotice": "Manual entry selected. Enter the details you can read from the receipt, or continue without an image.",
+    "sampleDescription": "Sample receipt purchase",
+    "chooseReviewMode": "Choose sample extraction or manual entry before reviewing fields.",
+    "reviewTitle": "Review transaction fields",
+    "reviewHelp": "Check the amount, date, payment status, category, and description. This prototype does not read the image.",
+    "confirmReview": "I reviewed and confirm these transaction fields.",
+    "reviewRequired": "Review the fields and confirm them before saving.",
+    "saveReviewed": "Save reviewed transaction",
+    "saved": "Reviewed transaction saved. The image was not stored.",
     "items": [
-      "Image preview and simulated extraction",
-      "Correct fields before saving",
-      "Manual entry when extraction is incomplete"
+      "Local image preview and simulated sample extraction",
+      "Correct fields and confirm before saving",
+      "Manual entry when an image is unreadable"
     ]
   },
   "owed": {

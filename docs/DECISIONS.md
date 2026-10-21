@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0, M1, M2, M3a and M3b are complete; review M3b before beginning M4.
+Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M4 are complete; review M4 before beginning M5.
 
 ## Agreed product decisions
 
@@ -16,6 +16,7 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 10. M2 manual records use whole MMK amounts. Pending transactions require a due date on or after the record date; pending amounts do not affect cash balances. Settled future-dated transactions are rejected. The opening reference is entered in Asia/Rangoon regardless of the browser's timezone. Correcting a record preserves its ID and creation time; manual deletion can be undone immediately in the current session. Linked scheduled payments are corrected through their occurrence lifecycle.
 11. M3a creates one-time payment rules with stable occurrence IDs. Future occurrences remain forecast-only. On app load, due occurrences become settled transactions dated on the original due date and labelled **Auto-recorded · Unconfirmed**. Catch-up is idempotent; explicitly unpaid occurrences stay unpaid. Users may cancel future schedules, confirm/correct the linked transaction, or mark a processed occurrence unpaid. Every affected balance discloses unconfirmed assumptions.
 12. M3b monthly rules generate one date per eligible month, clamping a requested day (such as 31) to that month's last day while retaining the requested day for later months. Dates before the start date and after the inclusive end date are skipped. App load catches up every due occurrence once and creates scheduled, forecast-only occurrences through a rolling 365-day horizon. Canceling a monthly rule removes its future scheduled occurrences and preserves processed history.
+13. M4 accepts nonempty JPEG, PNG and WebP images up to 5 MB. A local preview and clearly labelled sample extraction help demonstrate the review flow; the extraction is not OCR and does not inspect image pixels. Users can correct every field or enter details manually when an image is unreadable. A confirmation checkbox is required before saving. The image stays in the current browser tab, is not sent to a service or stored, and only the confirmed transaction fields persist. Image-derived records use `source: receipt_image` and `ocrReviewStatus: reviewed`; manual fallback without an image uses a manual source.
 
 ## Implementation assumptions (not new product decisions)
 

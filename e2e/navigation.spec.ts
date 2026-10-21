@@ -32,7 +32,13 @@ for (const width of [360, 768, 1280]) {
         ),
       ).toBeVisible();
       if (
-        !['Transactions', 'Dashboard', 'Settings', 'Schedules'].includes(name)
+        ![
+          'Transactions',
+          'Dashboard',
+          'Settings',
+          'Schedules',
+          'Upload & review',
+        ].includes(name)
       )
         await expect(page.getByText('Not implemented yet')).toBeVisible();
       expect(
@@ -143,4 +149,135 @@ test('monthly schedule clamps month ends and catches up each eligible occurrence
   await expect(page.getByText('Auto-recorded · Unconfirmed')).toHaveCount(3);
   await page.reload();
   await expect(page.getByText('Auto-recorded · Unconfirmed')).toHaveCount(3);
+});
+
+test('simulated receipt extraction is reviewed before saving its fields', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/');
+  await expect(
+    page.getByText('Saved demo data was invalid and has been reset.'),
+  ).toHaveCount(0);
+  await page.getByLabel('Opening amount (MMK)').fill('100000');
+  await page.getByRole('button', { name: 'Save opening balance' }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Upload & review' })
+    .click();
+  await page
+    .getByLabel('Receipt or screenshot (JPEG, PNG, or WebP; up to 5 MB)')
+    .setInputFiles({
+      name: 'market-receipt.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/RZkAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+  await expect(
+    page.getByRole('img', {
+      name: 'Local preview of the selected receipt or screenshot',
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Simulate sample extraction' })
+    .click();
+  await expect(
+    page.getByText('Sample extraction · simulated, not OCR'),
+  ).toBeVisible();
+  await page.getByLabel('Amount (MMK)').fill('14800');
+  await page.getByLabel('Description').fill('Market vegetables');
+  await page.getByLabel('It happened after the opening balance time').check();
+  const reviewConfirmation = page.getByLabel(
+    'I reviewed and confirm these transaction fields.',
+  );
+  await reviewConfirmation.check();
+  await page.getByLabel('Amount (MMK)').fill('14801');
+  await expect(reviewConfirmation).not.toBeChecked();
+  await page.getByRole('button', { name: 'Save reviewed transaction' }).click();
+  await expect(page.getByRole('alert')).toHaveText(
+    'Review the fields and confirm them before saving.',
+  );
+  await page.getByLabel('Amount (MMK)').fill('14800');
+  await page.getByLabel('It happened after the opening balance time').check();
+  await reviewConfirmation.check();
+  await page.getByRole('button', { name: 'Save reviewed transaction' }).click();
+  await expect(
+    page.getByText('Reviewed transaction saved. The image was not stored.'),
+  ).toBeVisible();
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Transactions' })
+    .click();
+  await expect(page.getByText('Market vegetables')).toBeVisible();
+  await expect(page.getByText('14,800 MMK')).toBeVisible();
+});
+
+test('unreadable image supports manual entry and rejects invalid files', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/');
+  await expect(
+    page.getByText('Saved demo data was invalid and has been reset.'),
+  ).toHaveCount(0);
+  await page.getByLabel('Opening amount (MMK)').fill('100000');
+  await page.getByRole('button', { name: 'Save opening balance' }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Upload & review' })
+    .click();
+  const upload = page.getByLabel(
+    'Receipt or screenshot (JPEG, PNG, or WebP; up to 5 MB)',
+  );
+  await upload.setInputFiles({
+    name: 'unsupported.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('pdf'),
+  });
+  await expect(page.getByRole('alert')).toHaveText(
+    'Choose a JPEG, PNG, or WebP image.',
+  );
+  await upload.setInputFiles({
+    name: 'empty.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(0),
+  });
+  await expect(page.getByRole('alert')).toHaveText(
+    'That image file is empty. Choose another file or enter the details manually.',
+  );
+  await upload.setInputFiles({
+    name: 'large.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(5 * 1024 * 1024 + 1),
+  });
+  await expect(page.getByRole('alert')).toHaveText(
+    'The image must be 5 MB or smaller. Choose a smaller image or enter the details manually.',
+  );
+  await upload.setInputFiles({
+    name: 'blurry-receipt.webp',
+    mimeType: 'image/webp',
+    buffer: Buffer.from(
+      'UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA==',
+      'base64',
+    ),
+  });
+  await page
+    .getByRole('button', {
+      name: 'Image unreadable or unavailable · enter manually',
+    })
+    .click();
+  await page.getByLabel('Amount (MMK)').fill('7900');
+  await page.getByLabel('Description').fill('Manually read bill');
+  await page.getByLabel('It happened after the opening balance time').check();
+  await page
+    .getByLabel('I reviewed and confirm these transaction fields.')
+    .check();
+  await page.getByRole('button', { name: 'Save reviewed transaction' }).click();
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Transactions' })
+    .click();
+  await expect(page.getByText('Manually read bill')).toBeVisible();
 });

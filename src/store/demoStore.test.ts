@@ -30,6 +30,15 @@ const exampleData = (): AppData => ({
 });
 
 describe('versioned demo persistence', () => {
+  it('starts with an empty workspace without reporting corrupt saved data', async () => {
+    const store = createDemoStore(memoryStorage().storage, {
+      skipHydration: true,
+    });
+    await store.persist.rehydrate();
+    expect(store.getState().data).toEqual(emptyAppData());
+    expect(store.getState().storageNotice).toBeNull();
+  });
+
   it('processes a due one-time schedule once and restores it as unpaid on request', () => {
     const store = createDemoStore(memoryStorage().storage, {
       skipHydration: true,

@@ -320,6 +320,7 @@ export function createDemoStore(
           storageNotice: `Saved demo data version ${previousVersion} was unsupported and has been reset.`,
         }),
         merge: (persisted, current) => {
+          if (persisted === null || persisted === undefined) return current;
           const result = persistedStoreSchema.safeParse(persisted);
           if (!result.success) {
             void Promise.resolve(backingStorage.removeItem(STORAGE_KEY)).catch(

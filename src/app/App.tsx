@@ -4,6 +4,7 @@ import { Leaf, Menu, X, FlaskConical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { screens } from './routes';
 import { Placeholder } from '../features/Placeholder';
+import { CapturePage } from '../features/CapturePage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
 import {
@@ -143,6 +144,8 @@ export function App() {
                         <TransactionsPage />
                       ) : id === 'schedules' ? (
                         <SchedulesPage />
+                      ) : id === 'capture' ? (
+                        <CapturePage />
                       ) : id === 'settings' ? (
                         <SettingsPage />
                       ) : (
