@@ -8,6 +8,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
 import {
   DashboardPage,
+  SchedulesPage,
   SettingsPage,
   TransactionsPage,
 } from '../features/FinancialPages';
@@ -25,6 +26,14 @@ export function App() {
     const screen = screens.find((s) => s.path === location.pathname);
     document.title = `${screen ? t(`${screen.id}.nav`) : t('notFound')} · ${t('brand')}`;
   }, [location.pathname, t]);
+  useEffect(() => {
+    const process = () => useDemoStore.getState().processDueSchedules();
+    if (useDemoStore.persist.hasHydrated()) {
+      process();
+      return;
+    }
+    return useDemoStore.persist.onFinishHydration(process);
+  }, []);
   return (
     <>
       <a
@@ -132,6 +141,8 @@ export function App() {
                         <DashboardPage />
                       ) : id === 'transactions' ? (
                         <TransactionsPage />
+                      ) : id === 'schedules' ? (
+                        <SchedulesPage />
                       ) : id === 'settings' ? (
                         <SettingsPage />
                       ) : (

@@ -48,7 +48,14 @@ export const transactionSchema = z
         message: 'Pending transactions need a due date.',
       });
     }
-    if (transaction.dueDate && transaction.dueDate < transaction.date) {
+    if (
+      transaction.dueDate &&
+      transaction.dueDate < transaction.date &&
+      !(
+        transaction.source === 'recurring' &&
+        transaction.cashStatus === 'settled'
+      )
+    ) {
       context.addIssue({
         code: 'custom',
         path: ['dueDate'],

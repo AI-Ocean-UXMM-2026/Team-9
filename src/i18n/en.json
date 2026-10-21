@@ -8,7 +8,7 @@
   "close": "Close menu",
   "workspace": "YOUR WORKSPACE",
   "prototype": "FRONTEND PROTOTYPE",
-  "phase": "M2 · Manual records",
+  "phase": "M3a · One-time schedules",
   "status": "Not implemented yet",
   "planned": "What’s planned",
   "scope": "This screen is a placeholder. Financial features will arrive in upcoming milestones.",
@@ -43,7 +43,8 @@
     "netMovement": "Net cash movement",
     "allTime": "Settled income minus settled expenses across all recorded dates.",
     "asOf": "Opening reference date: {{date}} · calculated from settled records",
-    "reviewOpeningDay": "{{count}} transaction(s) on the opening date need a timing choice:"
+    "reviewOpeningDay": "{{count}} transaction(s) on the opening date need a timing choice:",
+    "unconfirmedDisclosure": "The balance includes {{count}} auto-recorded payment assumption(s) that still need your confirmation."
   },
   "transaction": {
     "type": "Type",
@@ -55,6 +56,9 @@
     "settled": "Paid / received",
     "pending": "Pending",
     "dueDate": "Due date",
+    "confirmation": "Payment confirmation",
+    "unconfirmed": "Unconfirmed",
+    "confirmed": "Confirmed paid",
     "category": "Category",
     "uncategorized": "No category",
     "description": "Description"
@@ -74,6 +78,14 @@
     "uncategorized": "Uncategorized"
   },
   "transactions": {
+    "title": "Transactions",
+    "nav": "Transactions",
+    "description": "Keep everyday income and expenses together.",
+    "items": [
+      "Add, edit and search records",
+      "Choose categories manually",
+      "Confirm or correct an existing payment"
+    ],
     "open": "View transactions",
     "add": "Add transaction",
     "edit": "Correct existing record",
@@ -109,16 +121,6 @@
       "Outstanding payments and early warnings"
     ]
   },
-  "transactions": {
-    "title": "Transactions",
-    "nav": "Transactions",
-    "description": "Keep everyday income and expenses together.",
-    "items": [
-      "Add, edit and search records",
-      "Choose categories manually",
-      "Confirm or correct an existing payment"
-    ]
-  },
   "capture": {
     "title": "Upload & review",
     "nav": "Upload & review",
@@ -143,11 +145,39 @@
     "title": "Plan the next payment",
     "nav": "Schedules",
     "description": "One-time and monthly payments, with a shared lifecycle.",
+    "add": "Add a payment schedule",
+    "addHelp": "Future payments stay scheduled. When due, the demo records an unconfirmed assumption for you to review. Monthly schedules catch up missed months and show a rolling one-year forecast.",
+    "repeat": "Repeats",
+    "oneTime": "One time",
+    "monthly": "Monthly",
+    "startDate": "First eligible date",
+    "dayOfMonth": "Day of month (1–31)",
+    "endDate": "Last eligible date (optional)",
+    "monthlyDayLabel": "Monthly · day {{day}} (clamped to month end)",
+    "forecastHelp": "Monthly schedules show past occurrences and a rolling one-year forecast. Forecasts do not count in cash totals.",
+    "save": "Save schedule",
+    "saveError": "This schedule could not be saved. Check the details and try again.",
+    "list": "Your payment schedules",
+    "empty": "No payment schedules yet.",
+    "paymentDate": "Recorded payment date",
+    "correct": "Confirm or correct",
+    "markUnpaid": "Mark unpaid",
+    "confirmUnpaid": "Mark this payment as unpaid? Its cash movement will be removed and the obligation restored.",
+    "cancel": "Cancel schedule",
+    "confirmCancel": "Cancel this future payment?",
+    "canceled": "Canceled · existing payment history kept",
     "items": [
       "One-time and monthly schedules",
       "Auto-recorded · Unconfirmed payments when due",
       "Confirm, correct or mark unpaid"
     ]
+  },
+  "scheduleStatus": {
+    "scheduled": "Scheduled · forecast only",
+    "canceled": "Canceled",
+    "assumed_unconfirmed": "Auto-recorded · Unconfirmed",
+    "confirmed_paid": "Confirmed paid",
+    "explicitly_unpaid": "Marked unpaid"
   },
   "insights": {
     "title": "Look ahead with clarity",

@@ -2,7 +2,7 @@
 
 The user's explicit instructions take precedence. The latest agreed business contract is [docs/DECISIONS.md](docs/DECISIONS.md); the reconciled requirements and milestone order are [docs/FinTech_PRD_SRS.md](docs/FinTech_PRD_SRS.md). Read both before changes. The original supplied drafts are superseded by these reconciled documents.
 
-M0, M1 and M2 are complete. M2 adds opening-balance setup, manual income and expense records, due dates and pending status, same-ID corrections, opening-day classification, search/filtering and delete/undo. Review M2 with the user before starting M3a: one-time schedule lifecycle. Continue to follow the milestone order in the requirements.
+M0, M1, M2, M3a and M3b are complete. M3a adds one-time schedules. M3b adds monthly occurrence generation with original-day month-end clamping, app-load catch-up, a rolling one-year forecast window, and cancellation of future occurrences. Both use stable occurrence IDs, unconfirmed assumed payments, and same-occurrence confirmation, correction and unpaid handling. Next is M4 simulated upload and review. Continue to follow the milestone order in the requirements.
 
 Use React 18, strict TypeScript, Vite, React Router, Tailwind, lucide-react and react-i18next. Add planned Zustand/persist, React Hook Form, Zod, Recharts, date-fns and shadcn/Radix when used. Vitest/RTL and Playwright validate implemented behavior. Node 24 LTS and npm lockfile; ESLint, Prettier, typecheck, tests and build in CI.
 

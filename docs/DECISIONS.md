@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0, M1 and M2 are complete; review M2 before beginning M3a.
+Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0, M1, M2, M3a and M3b are complete; review M3b before beginning M4.
 
 ## Agreed product decisions
 
@@ -14,6 +14,8 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 8. Manual category selection works independently. Forecasts work from recorded obligations; recurring rules add occurrences by the same mechanism. Credit readiness measures record completeness, never creditworthiness or approval. MMK 180,000 is a calculated seed regression case, never a fixed dashboard value.
 9. Frontend and synthetic data only. Simulated OCR requires review; insights/chat are rule-based and labelled. No real OCR, AI, financial integrations or backend in this delivery.
 10. M2 manual records use whole MMK amounts. Pending transactions require a due date on or after the record date; pending amounts do not affect cash balances. Settled future-dated transactions are rejected. The opening reference is entered in Asia/Rangoon regardless of the browser's timezone. Correcting a record preserves its ID and creation time; manual deletion can be undone immediately in the current session. Linked scheduled payments are corrected through their occurrence lifecycle.
+11. M3a creates one-time payment rules with stable occurrence IDs. Future occurrences remain forecast-only. On app load, due occurrences become settled transactions dated on the original due date and labelled **Auto-recorded · Unconfirmed**. Catch-up is idempotent; explicitly unpaid occurrences stay unpaid. Users may cancel future schedules, confirm/correct the linked transaction, or mark a processed occurrence unpaid. Every affected balance discloses unconfirmed assumptions.
+12. M3b monthly rules generate one date per eligible month, clamping a requested day (such as 31) to that month's last day while retaining the requested day for later months. Dates before the start date and after the inclusive end date are skipped. App load catches up every due occurrence once and creates scheduled, forecast-only occurrences through a rolling 365-day horizon. Canceling a monthly rule removes its future scheduled occurrences and preserves processed history.
 
 ## Implementation assumptions (not new product decisions)
 
@@ -27,7 +29,7 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 
 | Older wording                                                    | Resolution                                                                                                          |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Wait for first reply/milestone permission                        | User authorization continues milestone work; review M2 before M3a                                                   |
+| Wait for first reply/milestone permission                        | User authorization continues milestone work; review M3a before M3b                                                  |
 | Net balance / all-time paid totals plus optional opening balance | Separate net movement and dated recorded available balance; reference rules above                                   |
 | Paid/pending only, auto-log as paid                              | Scheduled, assumed unconfirmed, confirmed paid, explicitly unpaid; payment confirmation is separate from OCR review |
 | Recurrence P1 after forecast; weekly/monthly                     | Required one-time and monthly scheduling before forecast; weekly is not added to agreed scope                       |

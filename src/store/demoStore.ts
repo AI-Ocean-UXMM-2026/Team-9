@@ -5,10 +5,15 @@ import {
   appDataSchema,
   persistedStoreSchema,
   transactionSchema,
+  scheduledRuleSchema,
+  occurrenceIdFor,
   type AppData,
   type PersistedStore,
+  type ScheduledRule,
   type Transaction,
 } from '../domain/types';
+import { processSchedules } from '../domain/scheduleLifecycle';
+import { systemClock, type Clock } from '../services/clock';
 import {
   browserStorage,
   createSafeJsonStorage,
@@ -22,6 +27,10 @@ export interface DemoStore extends PersistedStore {
   saveTransaction(transaction: Transaction): void;
   deleteTransaction(id: string): Transaction | null;
   restoreTransaction(transaction: Transaction): void;
+  createScheduleRule(rule: ScheduledRule, clock?: Clock): void;
+  processDueSchedules(clock?: Clock): void;
+  cancelScheduleRule(ruleId: string): void;
+  markOccurrenceUnpaid(occurrenceId: string): void;
   dismissStorageNotice(): void;
 }
 
@@ -144,6 +153,153 @@ export function createDemoStore(
             data: appDataSchema.parse({
               ...current,
               transactions: [...current.transactions, transaction],
+            }),
+          });
+        },
+        createScheduleRule: (rule, clock = systemClock) => {
+          const parsed = scheduledRuleSchema.parse(rule);
+          const current = get().data;
+          if (current.scheduleRules.some((item) => item.id === parsed.id)) {
+            throw new Error('A schedule with this ID already exists.');
+          }
+          const created = appDataSchema.parse({
+            ...current,
+            scheduleRules: [...current.scheduleRules, parsed],
+          });
+          set({ data: processSchedules(created, clock) });
+        },
+        processDueSchedules: (clock = systemClock) => {
+          const current = get().data;
+          const processed = processSchedules(current, clock);
+          if (processed !== current) set({ data: processed });
+        },
+        cancelScheduleRule: (ruleId) => {
+          const current = get().data;
+          const rule = current.scheduleRules.find((item) => item.id === ruleId);
+          if (!rule) return;
+          const occurrenceId =
+            rule.schedule.kind === 'one_time'
+              ? occurrenceIdFor(ruleId, rule.schedule.dueDate)
+              : null;
+          const occurrences = current.paymentOccurrences.filter(
+            (item) => item.ruleId === ruleId,
+          );
+          if (
+            rule.schedule.kind === 'one_time' &&
+            occurrences.some((item) => item.status !== 'scheduled')
+          ) {
+            throw new Error(
+              'A due schedule cannot be canceled after payment processing.',
+            );
+          }
+          if (
+            rule.schedule.kind === 'monthly' &&
+            occurrences.some((item) => item.status === 'scheduled')
+          ) {
+            set({
+              data: appDataSchema.parse({
+                ...current,
+                scheduleRules: current.scheduleRules.map((item) =>
+                  item.id === ruleId
+                    ? {
+                        ...item,
+                        active: false,
+                        updatedAt: systemClock.now().toISOString(),
+                      }
+                    : item,
+                ),
+                paymentOccurrences: current.paymentOccurrences.filter(
+                  (item) =>
+                    item.ruleId !== ruleId || item.status !== 'scheduled',
+                ),
+              }),
+            });
+            return;
+          }
+          if (rule.schedule.kind === 'monthly') {
+            set({
+              data: appDataSchema.parse({
+                ...current,
+                scheduleRules: current.scheduleRules.map((item) =>
+                  item.id === ruleId
+                    ? {
+                        ...item,
+                        active: false,
+                        updatedAt: systemClock.now().toISOString(),
+                      }
+                    : item,
+                ),
+              }),
+            });
+            return;
+          }
+          set({
+            data: appDataSchema.parse({
+              ...current,
+              scheduleRules: current.scheduleRules.filter(
+                (item) => item.id !== ruleId,
+              ),
+              paymentOccurrences: occurrenceId
+                ? current.paymentOccurrences.filter(
+                    (item) => item.id !== occurrenceId,
+                  )
+                : current.paymentOccurrences,
+            }),
+          });
+        },
+        markOccurrenceUnpaid: (occurrenceId) => {
+          const current = get().data;
+          const occurrence = current.paymentOccurrences.find(
+            (item) => item.id === occurrenceId,
+          );
+          if (
+            !occurrence ||
+            occurrence.status === 'scheduled' ||
+            occurrence.status === 'explicitly_unpaid'
+          )
+            return;
+          const payment = current.transactions.find(
+            (item) => item.id === occurrence.paymentTransactionId,
+          );
+          if (!payment)
+            throw new Error('The occurrence payment record is missing.');
+          const now = systemClock.now().toISOString();
+          const transactions = current.transactions.map((item) =>
+            item.id === payment.id
+              ? {
+                  ...item,
+                  date: occurrence.originalDueDate,
+                  dueDate: occurrence.originalDueDate,
+                  cashStatus: 'pending' as const,
+                  confirmationStatus: 'not_applicable' as const,
+                  updatedAt: now,
+                }
+              : item,
+          );
+          const paymentOccurrences = current.paymentOccurrences.map((item) =>
+            item.id === occurrenceId && item.status !== 'scheduled'
+              ? {
+                  ...item,
+                  status: 'explicitly_unpaid' as const,
+                  paymentDate: occurrence.originalDueDate,
+                  paymentAmount: payment.amount,
+                  history: [
+                    ...item.history,
+                    {
+                      action: 'marked_unpaid' as const,
+                      at: now,
+                      previousAmount: occurrence.paymentAmount,
+                      previousPaymentDate: occurrence.paymentDate,
+                    },
+                  ].slice(-100),
+                }
+              : item,
+          );
+          set({
+            data: appDataSchema.parse({
+              ...current,
+              transactions,
+              paymentOccurrences,
             }),
           });
         },

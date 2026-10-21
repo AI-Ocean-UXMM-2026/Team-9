@@ -1,5 +1,11 @@
-import { useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
 import { BUSINESS_TIME_ZONE, type Transaction } from '../domain/types';
@@ -56,6 +62,9 @@ export function DashboardPage() {
   const settledExpense = data.transactions
     .filter((item) => item.cashStatus === 'settled' && item.type === 'expense')
     .reduce((sum, item) => sum + item.amount, 0);
+  const unconfirmedCount = data.paymentOccurrences.filter(
+    (occurrence) => occurrence.status === 'assumed_unconfirmed',
+  ).length;
   return (
     <>
       <section className="mb-8 max-w-3xl">
@@ -183,6 +192,14 @@ export function DashboardPage() {
           {t('settings.nav')} →
         </Link>
       </div>
+      {unconfirmedCount > 0 ? (
+        <p
+          className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-950"
+          role="status"
+        >
+          {t('balance.unconfirmedDisclosure', { count: unconfirmedCount })}
+        </p>
+      ) : null}
     </>
   );
 }
@@ -288,6 +305,322 @@ export function SettingsPage() {
   );
 }
 
+export function SchedulesPage() {
+  const { t } = useTranslation();
+  const data = useDemoStore((state) => state.data);
+  const createSchedule = useDemoStore((state) => state.createScheduleRule);
+  const cancelSchedule = useDemoStore((state) => state.cancelScheduleRule);
+  const markUnpaid = useDemoStore((state) => state.markOccurrenceUnpaid);
+  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [repeat, setRepeat] = useState<'one_time' | 'monthly'>('one_time');
+  const [amount, setAmount] = useState('');
+  const [dueDate, setDueDate] = useState(systemClock.today());
+  const [dayOfMonth, setDayOfMonth] = useState(
+    String(Number(systemClock.today().slice(-2))),
+  );
+  const [endDate, setEndDate] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState('');
+  const categories = data.categories.filter(
+    (category) => category.type === type || category.type === 'both',
+  );
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    if (
+      !/^\d+$/.test(amount) ||
+      Number(amount) <= 0 ||
+      Number(amount) > 1_000_000_000_000
+    ) {
+      setError(t('form.amountError'));
+      return;
+    }
+    const now = systemClock.now().toISOString();
+    try {
+      createSchedule({
+        id: uid(),
+        type,
+        amount: Number(amount),
+        categoryId: categoryId || null,
+        description: description.trim() || undefined,
+        counterpartyId: null,
+        schedule:
+          repeat === 'one_time'
+            ? { kind: 'one_time', dueDate }
+            : {
+                kind: 'monthly',
+                startDate: dueDate,
+                dayOfMonth: Number(dayOfMonth),
+                ...(endDate ? { endDate } : {}),
+              },
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      setAmount('');
+      setDescription('');
+      setCategoryId('');
+      setDueDate(systemClock.today());
+      setDayOfMonth(String(Number(systemClock.today().slice(-2))));
+      setEndDate('');
+    } catch {
+      setError(t('schedules.saveError'));
+    }
+  }
+  const rules = data.scheduleRules;
+  const rows = rules.reduce<
+    Array<{
+      rule: (typeof rules)[number];
+      occurrence: (typeof data.paymentOccurrences)[number] | null;
+    }>
+  >((all, rule) => {
+    const occurrences = data.paymentOccurrences
+      .filter((item) => item.ruleId === rule.id)
+      .sort((a, b) => a.originalDueDate.localeCompare(b.originalDueDate));
+    all.push(
+      ...(occurrences.length
+        ? occurrences.map((occurrence) => ({ rule, occurrence }))
+        : [{ rule, occurrence: null }]),
+    );
+    return all;
+  }, []);
+  return (
+    <>
+      <section className="mb-7">
+        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
+          {t('prototype')}
+        </p>
+        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
+          {t('schedules.title')}
+        </h1>
+        <p className="mt-4 max-w-2xl text-lg text-muted">
+          {t('schedules.description')}
+        </p>
+      </section>
+      <section className="rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+        <h2 className="text-xl font-semibold">{t('schedules.add')}</h2>
+        <p className="mt-1 text-sm text-muted">{t('schedules.addHelp')}</p>
+        <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
+          <label className="grid gap-2 text-sm font-medium">
+            {t('schedules.repeat')}
+            <select
+              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              value={repeat}
+              onChange={(event) =>
+                setRepeat(event.target.value as 'one_time' | 'monthly')
+              }
+            >
+              <option value="one_time">{t('schedules.oneTime')}</option>
+              <option value="monthly">{t('schedules.monthly')}</option>
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            {t('transaction.type')}
+            <select
+              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              value={type}
+              onChange={(event) => {
+                setType(event.target.value as 'income' | 'expense');
+                setCategoryId('');
+              }}
+            >
+              <option value="expense">{t('transaction.expense')}</option>
+              <option value="income">{t('transaction.income')}</option>
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            {t('transaction.amount')}
+            <input
+              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+              type="number"
+              min="1"
+              step="1"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              required
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            {repeat === 'one_time'
+              ? t('transaction.dueDate')
+              : t('schedules.startDate')}
+            <input
+              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+              type="date"
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              required
+            />
+          </label>
+          {repeat === 'monthly' ? (
+            <>
+              <label className="grid gap-2 text-sm font-medium">
+                {t('schedules.dayOfMonth')}
+                <input
+                  aria-label={t('schedules.dayOfMonth')}
+                  className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={dayOfMonth}
+                  onChange={(event) => setDayOfMonth(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                {t('schedules.endDate')}
+                <input
+                  className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+                  type="date"
+                  min={dueDate}
+                  value={endDate}
+                  onChange={(event) => setEndDate(event.target.value)}
+                />
+              </label>
+            </>
+          ) : null}
+          <label className="grid gap-2 text-sm font-medium">
+            {t('transaction.category')}
+            <select
+              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+            >
+              <option value="">{t('transaction.uncategorized')}</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {t(`category.${category.id}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-medium sm:col-span-2">
+            {t('transaction.description')}
+            <input
+              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+              maxLength={200}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </label>
+          {error ? (
+            <p className="text-sm text-red-800 sm:col-span-2" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="sm:col-span-2">
+            <button className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-white">
+              {t('schedules.save')}
+            </button>
+          </div>
+        </form>
+      </section>
+      <section className="mt-7 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+        <h2 className="text-xl font-semibold">{t('schedules.list')}</h2>
+        <p className="mt-1 text-sm text-muted">{t('schedules.forecastHelp')}</p>
+        {rows.length ? (
+          <ul className="mt-4 divide-y divide-[#e4e9e2]">
+            {rows.map(({ rule, occurrence }) => {
+              const due =
+                occurrence?.originalDueDate ??
+                (rule.schedule.kind === 'one_time'
+                  ? rule.schedule.dueDate
+                  : rule.schedule.startDate);
+              const firstScheduledDate = data.paymentOccurrences
+                .filter(
+                  (item) =>
+                    item.ruleId === rule.id && item.status === 'scheduled',
+                )
+                .map((item) => item.originalDueDate)
+                .sort()[0];
+              const canCancel =
+                rule.active &&
+                occurrence?.status === 'scheduled' &&
+                (rule.schedule.kind === 'one_time' ||
+                  occurrence.originalDueDate === firstScheduledDate);
+              return (
+                <li
+                  key={occurrence?.id ?? rule.id}
+                  className="flex flex-wrap items-center justify-between gap-4 py-5"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold">
+                      {rule.description ||
+                        t(`category.${rule.categoryId ?? 'uncategorized'}`)}
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      {t(`transaction.${rule.type}`)} · {due} ·{' '}
+                      {money(rule.amount)} MMK
+                    </p>
+                    {rule.schedule.kind === 'monthly' ? (
+                      <p className="text-sm text-muted">
+                        {t('schedules.monthlyDayLabel', {
+                          day: rule.schedule.dayOfMonth,
+                        })}
+                      </p>
+                    ) : null}
+                    <p className="mt-2 text-sm font-medium text-accent">
+                      {t(
+                        occurrence
+                          ? `scheduleStatus.${occurrence.status}`
+                          : rule.active
+                            ? 'scheduleStatus.scheduled'
+                            : 'scheduleStatus.canceled',
+                      )}
+                    </p>
+                    {occurrence && occurrence.status !== 'scheduled' ? (
+                      <p className="text-sm text-muted">
+                        {t('schedules.paymentDate')}: {occurrence.paymentDate}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {occurrence && occurrence.status !== 'scheduled' ? (
+                      <Link
+                        className="min-h-11 rounded-lg border px-3 py-2 text-sm font-medium"
+                        to={`/transactions?edit=${encodeURIComponent(occurrence.paymentTransactionId)}`}
+                      >
+                        {t('schedules.correct')}
+                      </Link>
+                    ) : null}
+                    {occurrence &&
+                    (occurrence.status === 'assumed_unconfirmed' ||
+                      occurrence.status === 'confirmed_paid') ? (
+                      <button
+                        className="min-h-11 rounded-lg border px-3 text-sm font-medium"
+                        onClick={() => {
+                          if (window.confirm(t('schedules.confirmUnpaid')))
+                            markUnpaid(occurrence.id);
+                        }}
+                      >
+                        {t('schedules.markUnpaid')}
+                      </button>
+                    ) : null}
+                    {canCancel ? (
+                      <button
+                        className="min-h-11 rounded-lg border px-3 text-sm font-medium text-red-800"
+                        onClick={() => {
+                          if (window.confirm(t('schedules.confirmCancel')))
+                            cancelSchedule(rule.id);
+                        }}
+                      >
+                        {t('schedules.cancel')}
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-4 text-muted">{t('schedules.empty')}</p>
+        )}
+      </section>
+    </>
+  );
+}
+
 export function TransactionsPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
@@ -299,6 +632,7 @@ export function TransactionsPage() {
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
   const [undo, setUndo] = useState<Transaction | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(systemClock.today());
@@ -345,26 +679,51 @@ export function TransactionsPage() {
     setConfirmationStatus('not_applicable');
     setError('');
   }
-  function edit(item: Transaction) {
-    setEditing(item);
-    setType(item.type);
-    setAmount(String(item.amount));
-    setDate(item.date);
-    setDueDate(item.dueDate ?? '');
-    setDescription(item.description ?? '');
-    setCategoryId(item.categoryId ?? '');
-    setCashStatus(item.cashStatus);
-    setOpeningDayDisposition(item.openingDayDisposition ?? '');
-    setConfirmationStatus(item.confirmationStatus);
-    setError('');
-    document
-      .getElementById('transaction-form')
-      ?.scrollIntoView({ behavior: 'smooth' });
-  }
+  const edit = useCallback(
+    (item: Transaction) => {
+      setEditing(item);
+      setType(item.type);
+      setAmount(String(item.amount));
+      setDate(item.date);
+      setDueDate(
+        item.paymentOccurrenceId
+          ? (data.paymentOccurrences.find(
+              (occurrence) => occurrence.id === item.paymentOccurrenceId,
+            )?.originalDueDate ??
+              item.dueDate ??
+              '')
+          : (item.dueDate ?? ''),
+      );
+      setDescription(item.description ?? '');
+      setCategoryId(item.categoryId ?? '');
+      setCashStatus(item.cashStatus);
+      setOpeningDayDisposition(item.openingDayDisposition ?? '');
+      setConfirmationStatus(item.confirmationStatus);
+      setError('');
+      document
+        .getElementById('transaction-form')
+        ?.scrollIntoView({ behavior: 'smooth' });
+    },
+    [data.paymentOccurrences],
+  );
+  useEffect(() => {
+    const id = searchParams.get('edit');
+    const item = id
+      ? data.transactions.find((transaction) => transaction.id === id)
+      : undefined;
+    if (item) {
+      const timeout = window.setTimeout(() => {
+        edit(item);
+        setSearchParams({}, { replace: true });
+      }, 0);
+      return () => window.clearTimeout(timeout);
+    }
+    return undefined;
+  }, [data.transactions, edit, searchParams, setSearchParams]);
   function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
-    if (!data.openingBalance) {
+    if (!data.openingBalance && !editing?.paymentOccurrenceId) {
       setError(t('transactions.openingRequired'));
       return;
     }
@@ -395,7 +754,9 @@ export function TransactionsPage() {
       amount: Number(amount),
       currency: 'MMK',
       date,
-      ...(cashStatus === 'pending' ? { dueDate } : {}),
+      ...(cashStatus === 'pending' || editing?.paymentOccurrenceId
+        ? { dueDate: dueDate || editing?.dueDate || date }
+        : {}),
       ...(openingDayDisposition
         ? {
             openingDayDisposition: openingDayDisposition as
@@ -407,7 +768,12 @@ export function TransactionsPage() {
       counterpartyId: editing?.counterpartyId ?? null,
       cashStatus,
       confirmationStatus:
-        cashStatus === 'pending' ? 'not_applicable' : confirmationStatus,
+        cashStatus === 'pending'
+          ? 'not_applicable'
+          : editing?.paymentOccurrenceId &&
+              confirmationStatus === 'not_applicable'
+            ? 'unconfirmed'
+            : confirmationStatus,
       source: editing?.source ?? 'manual',
       ocrReviewStatus: editing?.ocrReviewStatus ?? 'not_applicable',
       ...(editing?.paymentOccurrenceId
@@ -431,7 +797,7 @@ export function TransactionsPage() {
           {t('transactions.description')}
         </p>
       </section>
-      {!data.openingBalance ? (
+      {!data.openingBalance && !editing?.paymentOccurrenceId ? (
         <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
           {t('transactions.openingRequired')}{' '}
           <Link className="font-semibold underline" to="/settings">
@@ -502,7 +868,11 @@ export function TransactionsPage() {
               {t('transaction.confirmation')}
               <select
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
-                value={confirmationStatus}
+                value={
+                  confirmationStatus === 'not_applicable'
+                    ? 'unconfirmed'
+                    : confirmationStatus
+                }
                 onChange={(e) =>
                   setConfirmationStatus(
                     e.target.value as 'unconfirmed' | 'confirmed',
@@ -587,7 +957,7 @@ export function TransactionsPage() {
           ) : null}
           <div className="flex gap-3 sm:col-span-2">
             <button
-              disabled={!data.openingBalance}
+              disabled={!data.openingBalance && !editing?.paymentOccurrenceId}
               className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-white disabled:opacity-50"
             >
               {editing
