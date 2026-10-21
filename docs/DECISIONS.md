@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 is authorized now. Stop after M0 for review.
+Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 and M1 are complete; M2 requires review before work begins.
 
 ## Agreed product decisions
 
@@ -17,6 +17,7 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 ## Implementation assumptions (not new product decisions)
 
 - Store the opening reference as an instant plus Asia/Rangoon business timezone. With date-only payments before the reference day, exclude them from available-balance accumulation; after the day, include them. On the opening day explicitly distinguish already-in-opening from after-reference movements. A date alone cannot establish ordering: require that choice rather than guessing. Timestamped payments count strictly after the reference instant; equality is included in opening. Period cash reporting can still show historical payments without adding them twice to available balance. M1 must encode/test this contract before financial UI.
+- M1 persistence contract: one versioned Zustand record validates opening balance, transactions, rules, occurrences, duplicate outcomes and checklist with Zod. A monthly occurrence ID is the rule ID plus its original due date; each recorded occurrence links to exactly one matching recurring transaction. Invalid, corrupt, oversized or unknown-version data resets to empty demo state and exposes a dismissible notice. A schema version change resets synthetic state until a tested migration is added.
 - Monthly dates absent in a month clamp to its final day, retaining the rule's original day for the next month. Calendar dates use the business timezone. Test this when scheduling is implemented.
 - M0 uses hash routing for static hosting, a desktop sidebar and mobile expandable navigation. No fake financial cards, data, storage, forms or engines.
 - Node 24 LTS baseline (local runtime 24.20.0); React 18, TypeScript, Vite, React Router, Tailwind, lucide-react, react-i18next, ESLint, Prettier, Vitest/RTL and Playwright. Install Zustand, Zod, React Hook Form, Recharts, date-fns and shadcn/Radix components only when actually used.

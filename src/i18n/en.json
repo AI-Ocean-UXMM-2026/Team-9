@@ -20,6 +20,7 @@
   "errorBody": "Reload the prototype to try again.",
   "reload": "Reload",
   "footer": "Built for everyday clarity. Synthetic data only.",
+  "dismiss": "Dismiss",
   "dashboard": {
     "title": "Your financial picture, in one place.",
     "nav": "Dashboard",

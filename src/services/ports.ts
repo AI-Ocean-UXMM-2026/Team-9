@@ -1,4 +1,4 @@
-/** Inject time into future domain workflows; M0 does not process occurrences. */
+/** Inject time into date-dependent domain workflows. */
 export interface Clock {
   now(): Date;
   today(): string;

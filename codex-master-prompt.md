@@ -2,7 +2,7 @@
 
 The user's explicit instructions take precedence. The latest agreed business contract is [docs/DECISIONS.md](docs/DECISIONS.md); the reconciled requirements and milestone order are [docs/FinTech_PRD_SRS.md](docs/FinTech_PRD_SRS.md). Read both before changes. The original supplied drafts are superseded by these reconciled documents.
 
-M0 is authorized: scaffold, essential tooling, CI, responsive shell, navigation, English localization, tokens and clearly labelled placeholders. Do not implement financial calculations, seed figures, scheduling, OCR, forecasting, insights, chat or readiness logic. Report checks and limitations, then wait for M1 review.
+M0 and M1 are complete. M1 established the persisted model, opening-reference selector, injectable clock and validation/recovery. The next milestone is M2: manual transactions, opening-balance setup and linked corrections. Implement it only when the user explicitly requests that next milestone.
 
 Use React 18, strict TypeScript, Vite, React Router, Tailwind, lucide-react and react-i18next. Add planned Zustand/persist, React Hook Form, Zod, Recharts, date-fns and shadcn/Radix when used. Vitest/RTL and Playwright validate implemented behavior. Node 24 LTS and npm lockfile; ESLint, Prettier, typecheck, tests and build in CI.
 

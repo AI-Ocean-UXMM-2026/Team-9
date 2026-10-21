@@ -5,8 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { screens } from './routes';
 import { Placeholder } from '../features/Placeholder';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { useDemoStore } from '../store/demoStore';
 export function App() {
   const { t } = useTranslation();
+  const storageNotice = useDemoStore((state) => state.storageNotice);
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const previousPath = useRef(location.pathname);
@@ -34,6 +36,20 @@ export function App() {
         <FlaskConical size={16} className="shrink-0" aria-hidden="true" />
         {t('demo')}
       </div>
+      {storageNotice ? (
+        <div
+          className="flex items-center justify-center gap-3 bg-amber-50 px-4 py-2 text-center text-sm text-amber-950"
+          role="status"
+        >
+          <span>{storageNotice}</span>
+          <button
+            className="min-h-11 rounded px-2 font-semibold underline"
+            onClick={() => useDemoStore.getState().dismissStorageNotice()}
+          >
+            {t('dismiss')}
+          </button>
+        </div>
+      ) : null}
       <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
         <aside className="border-b border-[#dce4dc] bg-white lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between p-5 lg:p-7">
