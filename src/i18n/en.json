@@ -1,0 +1,113 @@
+{
+  "brand": "FinTech Companion",
+  "tagline": "A clearer view of your money",
+  "demo": "Demo mode: simulated data. Do not enter real financial information.",
+  "skip": "Skip to content",
+  "navigation": "Main navigation",
+  "menu": "Menu",
+  "close": "Close menu",
+  "workspace": "YOUR WORKSPACE",
+  "prototype": "FRONTEND PROTOTYPE",
+  "phase": "M0 · Foundation",
+  "status": "Not implemented yet",
+  "planned": "What’s planned",
+  "scope": "This screen is a placeholder. Financial features will arrive in upcoming milestones.",
+  "noData": "No financial records or calculations are active in this milestone.",
+  "back": "Back to dashboard",
+  "notFound": "Page not found",
+  "notFoundBody": "This address does not match a prototype screen.",
+  "error": "Something went wrong",
+  "errorBody": "Reload the prototype to try again.",
+  "reload": "Reload",
+  "footer": "Built for everyday clarity. Synthetic data only.",
+  "dashboard": {
+    "title": "Your financial picture, in one place.",
+    "nav": "Dashboard",
+    "description": "A calm space to understand what comes in, what goes out, and what needs your attention.",
+    "items": [
+      "Recorded available balance and net cash movement",
+      "Reporting periods and income versus expenses",
+      "Outstanding payments and early warnings"
+    ]
+  },
+  "transactions": {
+    "title": "Transactions",
+    "nav": "Transactions",
+    "description": "Keep everyday income and expenses together.",
+    "items": [
+      "Add, edit and search records",
+      "Choose categories manually",
+      "Confirm or correct an existing payment"
+    ]
+  },
+  "capture": {
+    "title": "Upload & review",
+    "nav": "Upload & review",
+    "description": "Turn sample receipts into records you can review.",
+    "items": [
+      "Image preview and simulated extraction",
+      "Correct fields before saving",
+      "Manual entry when extraction is incomplete"
+    ]
+  },
+  "owed": {
+    "title": "Who owes what",
+    "nav": "Owed payments",
+    "description": "Keep incoming payments and outgoing obligations distinct.",
+    "items": [
+      "Who owes me",
+      "Who I owe",
+      "Due dates and outstanding obligations"
+    ]
+  },
+  "schedules": {
+    "title": "Plan the next payment",
+    "nav": "Schedules",
+    "description": "One-time and monthly payments, with a shared lifecycle.",
+    "items": [
+      "One-time and monthly schedules",
+      "Auto-recorded · Unconfirmed payments when due",
+      "Confirm, correct or mark unpaid"
+    ]
+  },
+  "insights": {
+    "title": "Look ahead with clarity",
+    "nav": "Forecast & insights",
+    "description": "Understand upcoming obligations and patterns in your records.",
+    "items": [
+      "Estimated cash-flow scenarios",
+      "Rule-based demo insights with evidence",
+      "Review possible duplicates or keep both"
+    ]
+  },
+  "chat": {
+    "title": "Ask your companion",
+    "nav": "Ask AI",
+    "description": "A planned rule-based demonstration grounded in synthetic records.",
+    "items": [
+      "Questions about recorded income and expenses",
+      "Answers linked to their supporting records",
+      "Clear limits for unsupported questions"
+    ]
+  },
+  "readiness": {
+    "title": "Prepare your records",
+    "nav": "Credit readiness",
+    "description": "Record completeness, not a credit score or a prediction of loan approval.",
+    "items": [
+      "Record-completeness checks",
+      "Supporting document checklist",
+      "Clear explanations of missing information"
+    ]
+  },
+  "settings": {
+    "title": "Make a clear starting point",
+    "nav": "Settings",
+    "description": "Your demo preferences and opening-balance setup will live here.",
+    "items": [
+      "Opening balance with its reference date and time",
+      "Automatic daily carry-forward",
+      "Synthetic data reset and forecast preferences"
+    ]
+  }
+}

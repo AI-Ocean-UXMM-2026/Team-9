@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+@theme {
+  --color-ink: #183c35;
+  --color-muted: #52655f;
+  --color-accent: #146b50;
+  --color-canvas: #f5f7f3;
+}
+@layer base {
+  :root {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    color: #183c35;
+    background: #f5f7f3;
+    font-synthesis: none;
+  }
+  body {
+    margin: 0;
+    min-width: 320px;
+  }
+  *:focus-visible {
+    outline: 3px solid #146b50;
+    outline-offset: 4px;
+  }
+  h1:focus,
+  main:focus {
+    outline: none;
+  }
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+@layer components {
+  .skip-link {
+    position: fixed;
+    left: 1rem;
+    top: -5rem;
+    z-index: 50;
+    padding: 0.8rem 1rem;
+    background: white;
+    border: 2px solid #146b50;
+  }
+  .skip-link:focus {
+    top: 0.5rem;
+  }
+}
