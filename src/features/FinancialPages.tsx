@@ -8,6 +8,13 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
+import {
+  getReportingRange,
+  summarizeMonthlyMovement,
+  summarizeOutstanding,
+  summarizePeriod,
+  type ReportingPeriod,
+} from '../domain/reporting';
 import { BUSINESS_TIME_ZONE, type Transaction } from '../domain/types';
 import { systemClock } from '../services/clock';
 import { useDemoStore } from '../store/demoStore';
@@ -51,17 +58,27 @@ function businessDate(instant: string) {
 export function DashboardPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
+  const [period, setPeriod] = useState<ReportingPeriod>('this_month');
+  const today = systemClock.today();
+  const range = getReportingRange(period, today);
+  const { startDate, endDate } = range;
   const result = useMemo(
     () =>
       calculateRecordedAvailableBalance(data.openingBalance, data.transactions),
     [data],
   );
-  const settledIncome = data.transactions
-    .filter((item) => item.cashStatus === 'settled' && item.type === 'income')
-    .reduce((sum, item) => sum + item.amount, 0);
-  const settledExpense = data.transactions
-    .filter((item) => item.cashStatus === 'settled' && item.type === 'expense')
-    .reduce((sum, item) => sum + item.amount, 0);
+  const summary = useMemo(
+    () => summarizePeriod(data.transactions, { startDate, endDate }),
+    [data.transactions, startDate, endDate],
+  );
+  const monthlyMovement = useMemo(
+    () => summarizeMonthlyMovement(data.transactions, today),
+    [data.transactions, today],
+  );
+  const outstanding = useMemo(
+    () => summarizeOutstanding(data, today),
+    [data, today],
+  );
   const unconfirmedCount = data.paymentOccurrences.filter(
     (occurrence) => occurrence.status === 'assumed_unconfirmed',
   ).length;
@@ -104,15 +121,77 @@ export function DashboardPage() {
                 })}
               </p>
             </article>
-            <article className="rounded-3xl border border-[#dce4dc] bg-white p-6 sm:p-8">
-              <p className="text-sm text-muted">{t('balance.netMovement')}</p>
-              <p className="mt-3 text-3xl font-semibold">
-                {money(settledIncome - settledExpense)}{' '}
-                <span className="text-base font-medium">MMK</span>
+            <Link
+              to="/owed"
+              className="rounded-3xl border border-[#dce4dc] bg-white p-6 transition hover:border-accent sm:p-8"
+            >
+              <p className="text-sm text-muted">{t('dashboard.outstanding')}</p>
+              <p className="mt-3 text-xl font-semibold">
+                <span className="text-accent">
+                  {money(outstanding.receivableTotal)}
+                </span>
+                {' / '}
+                {money(outstanding.payableTotal)} MMK
               </p>
-              <p className="mt-3 text-sm text-muted">{t('balance.allTime')}</p>
-            </article>
+              <p className="mt-3 text-sm text-muted">
+                {t('dashboard.outstandingHelp')}
+              </p>
+            </Link>
           </div>
+          <section className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {t('dashboard.periodSummary')}
+                </h2>
+                <p className="mt-1 text-sm text-muted">
+                  {range.startDate} – {range.endDate}
+                </p>
+              </div>
+              <label className="grid gap-1 text-sm font-medium">
+                {t('dashboard.reportingPeriod')}
+                <select
+                  className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
+                  value={period}
+                  onChange={(event) =>
+                    setPeriod(event.target.value as ReportingPeriod)
+                  }
+                >
+                  <option value="this_month">{t('dashboard.thisMonth')}</option>
+                  <option value="last_month">{t('dashboard.lastMonth')}</option>
+                  <option value="last_30_days">
+                    {t('dashboard.last30Days')}
+                  </option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <MetricCard
+                label={t('dashboard.periodIncome')}
+                value={summary.income}
+              />
+              <MetricCard
+                label={t('dashboard.periodExpenses')}
+                value={summary.expenses}
+              />
+              <MetricCard
+                label={t('balance.netMovement')}
+                value={summary.net}
+              />
+            </div>
+            <p className="mt-3 text-sm text-muted">
+              {t('dashboard.settledOnly', { count: summary.transactionCount })}
+            </p>
+          </section>
+          <section className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+            <h2 className="text-xl font-semibold">
+              {t('dashboard.monthlyChart')}
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {t('dashboard.monthlyChartHelp')}
+            </p>
+            <MovementChart values={monthlyMovement} />
+          </section>
           {result.unclassifiedOpeningDayIds.length ? (
             <p
               className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-950"
@@ -126,7 +205,7 @@ export function DashboardPage() {
               </Link>
             </p>
           ) : null}
-          <section className="mt-7 rounded-3xl border border-[#dce4dc] bg-white p-6 sm:p-8">
+          <section className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-6 sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold">
@@ -201,6 +280,89 @@ export function DashboardPage() {
         </p>
       ) : null}
     </>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: number }) {
+  return (
+    <article className="rounded-2xl bg-canvas p-4">
+      <p className="text-sm text-muted">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">
+        {money(value)} <span className="text-sm font-medium">MMK</span>
+      </p>
+    </article>
+  );
+}
+
+function MovementChart({
+  values,
+}: {
+  values: ReturnType<typeof summarizeMonthlyMovement>;
+}) {
+  const { t } = useTranslation();
+  const max = Math.max(
+    1,
+    ...values.flatMap((item) => [item.income, item.expenses]),
+  );
+  const monthLabel = (month: string) =>
+    new Intl.DateTimeFormat('en', { month: 'short' }).format(
+      new Date(`${month}-01T12:00:00Z`),
+    );
+  return (
+    <div className="mt-4 overflow-x-auto">
+      <svg
+        className="h-48 min-w-[34rem] w-full"
+        viewBox="0 0 600 190"
+        role="img"
+        aria-label={t('dashboard.monthlyChartAccessible')}
+      >
+        <line x1="20" y1="150" x2="580" y2="150" stroke="#cdddcf" />
+        {values.map((item, index) => {
+          const center = 65 + index * 94;
+          const incomeHeight = (item.income / max) * 118;
+          const expenseHeight = (item.expenses / max) * 118;
+          return (
+            <g key={item.month}>
+              <rect
+                x={center - 20}
+                y={150 - incomeHeight}
+                width="22"
+                height={incomeHeight}
+                rx="5"
+                fill="#18745b"
+              />
+              <rect
+                x={center + 5}
+                y={150 - expenseHeight}
+                width="22"
+                height={expenseHeight}
+                rx="5"
+                fill="#c77b35"
+              />
+              <text
+                x={center + 3}
+                y="174"
+                textAnchor="middle"
+                fill="#52635a"
+                fontSize="12"
+              >
+                {monthLabel(item.month)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="flex gap-5 text-sm text-muted" aria-hidden="true">
+        <span>
+          <i className="mr-2 inline-block size-3 rounded-sm bg-accent" />
+          {t('dashboard.periodIncome')}
+        </span>
+        <span>
+          <i className="mr-2 inline-block size-3 rounded-sm bg-[#c77b35]" />
+          {t('dashboard.periodExpenses')}
+        </span>
+      </div>
+    </div>
   );
 }
 

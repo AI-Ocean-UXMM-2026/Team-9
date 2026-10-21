@@ -38,6 +38,8 @@ for (const width of [360, 768, 1280]) {
           'Settings',
           'Schedules',
           'Upload & review',
+          'Owed payments',
+          'Forecast & insights',
         ].includes(name)
       )
         await expect(page.getByText('Not implemented yet')).toBeVisible();
@@ -78,6 +80,45 @@ test('skip link supports keyboard navigation', async ({ page }) => {
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.locator('main')).toBeFocused();
+});
+
+test('M5 dashboard periods, outstanding screen and forecast are available', async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/');
+  await page.getByLabel('Opening amount (MMK)').fill('470000');
+  await page.getByRole('button', { name: 'Save opening balance' }).click();
+  await expect(page.getByLabel('Reporting period')).toHaveValue('this_month');
+  await expect(
+    page.getByText(
+      'Based on 0 settled transaction(s); pending items are excluded.',
+    ),
+  ).toBeVisible();
+  await page.getByLabel('Reporting period').selectOption('last_month');
+  await expect(page.getByLabel('Reporting period')).toHaveValue('last_month');
+
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Owed payments' })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Incoming payments' }),
+  ).toBeVisible();
+  await expect(page.getByText('No unpaid incoming payments.')).toBeVisible();
+  await expect(page.getByText('No unpaid outgoing obligations.')).toBeVisible();
+
+  await page
+    .getByRole('navigation')
+    .getByRole('link', { name: 'Forecast & insights' })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: '14-day daily forecast' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Estimated from your recorded available balance/),
+  ).toBeVisible();
+  await expect(page.getByRole('table').getByRole('row')).toHaveCount(15);
 });
 
 test('opening balance and manual transaction workflow', async ({ page }) => {

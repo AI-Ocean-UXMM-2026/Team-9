@@ -1,6 +1,6 @@
 # Decisions and reconciliation
 
-Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M4 are complete; review M4 before beginning M5.
+Updated 21 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M5 are complete; review M5 before beginning M6.
 
 ## Agreed product decisions
 
@@ -17,6 +17,7 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 11. M3a creates one-time payment rules with stable occurrence IDs. Future occurrences remain forecast-only. On app load, due occurrences become settled transactions dated on the original due date and labelled **Auto-recorded · Unconfirmed**. Catch-up is idempotent; explicitly unpaid occurrences stay unpaid. Users may cancel future schedules, confirm/correct the linked transaction, or mark a processed occurrence unpaid. Every affected balance discloses unconfirmed assumptions.
 12. M3b monthly rules generate one date per eligible month, clamping a requested day (such as 31) to that month's last day while retaining the requested day for later months. Dates before the start date and after the inclusive end date are skipped. App load catches up every due occurrence once and creates scheduled, forecast-only occurrences through a rolling 365-day horizon. Canceling a monthly rule removes its future scheduled occurrences and preserves processed history.
 13. M4 accepts nonempty JPEG, PNG and WebP images up to 5 MB. A local preview and clearly labelled sample extraction help demonstrate the review flow; the extraction is not OCR and does not inspect image pixels. Users can correct every field or enter details manually when an image is unreadable. A confirmation checkbox is required before saving. The image stays in the current browser tab, is not sent to a service or stored, and only the confirmed transaction fields persist. Image-derived records use `source: receipt_image` and `ocrReviewStatus: reviewed`; manual fallback without an image uses a manual source.
+14. M5 reporting periods include settled transactions only; pending items remain in owed totals and forecast inputs. The dashboard offers this month, last month and rolling 30 days, and compares six months of settled income and expenses. Outstanding income and expense are shown separately, with overdue state derived from due date. The 14-day forecast starts from recorded available balance, brings overdue pending obligations to today, counts scheduled occurrences once, and shifts expected inflows by seven days in the delayed scenario. The 180,000 shortfall is a regression result from the specified inputs, never a fixed display value.
 
 ## Implementation assumptions (not new product decisions)
 
@@ -35,7 +36,7 @@ Updated 21 October 2026. The user's latest pasted request is authoritative; supp
 | Paid/pending only, auto-log as paid                              | Scheduled, assumed unconfirmed, confirmed paid, explicitly unpaid; payment confirmation is separate from OCR review |
 | Recurrence P1 after forecast; weekly/monthly                     | Required one-time and monthly scheduling before forecast; weekly is not added to agreed scope                       |
 | Add transaction includes auto-categorize                         | Manual category independent, optional suggestion                                                                    |
-| Forecast adds rules and payments separately                      | Expand to stable occurrences, count each once                                                                       |
+| Forecast adds rules and payments separately                      | Expand to stable occurrences, count each once; M5 includes scheduled occurrences in the 14-day horizon              |
 | Fixed demo warning                                               | Seed test only; live calculations from current synthetic records                                                    |
 | Optional real OCR adapter                                        | Mock only for this prototype                                                                                        |
 

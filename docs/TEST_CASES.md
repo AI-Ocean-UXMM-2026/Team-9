@@ -1,6 +1,6 @@
 # Test cases for completed milestones
 
-Scope: completed M0–M3b behavior only. These cases are for the synthetic-data prototype; do not use real financial information. M4 upload/review and later forecast, insights, chat, and readiness flows are outside this test set because they are not implemented yet.
+Scope: completed M0–M5 behavior. These cases are for the synthetic-data prototype; do not use real financial information. Insights, duplicate review, chat and readiness remain outside this test set because they are not implemented yet.
 
 ## Run and reset
 
@@ -30,6 +30,10 @@ Run `npm ci`, then `npm run dev` from the repository root. Open the Vite URL and
 | TC-018 | M4 / P0              | Choose the unreadable-image/manual-entry path, enter transaction fields, confirm them, and save. Repeat with no image selected.                                                             | Manual entry works for unreadable or unavailable images. With an image, the record is marked reviewed; without one, it is saved as a manual transaction.                                                   |
 | TC-019 | M4 / P0              | Try an unsupported file type, an empty image file, and an image larger than 5 MB.                                                                                                           | Each file is rejected with a visible explanation; no extraction or transaction is saved.                                                                                                                   |
 | TC-020 | M4 / P1              | Upload an image, choose a pending transaction, set a valid due date, then try a due date before the transaction date.                                                                       | A valid obligation can be saved after confirmation. An earlier due date is rejected.                                                                                                                       |
+| TC-021 | M5 / P0              | Set an opening balance and settled income/expense records. Change the dashboard period between this month, last month and last 30 days.                                                     | Income, expenses and net movement update for the selected date range. Pending transactions do not affect period totals; available balance remains based on the opening reference.                          |
+| TC-022 | M5 / P0              | Create pending income and expense transactions with due dates before and after today. Open Owed payments.                                                                                   | Incoming and outgoing obligations are listed separately, ordered by due date, with overdue state derived from the current date. Settled transactions are excluded.                                         |
+| TC-023 | M5 / P0              | Set an opening balance and pending invoice of 400,000 due in two days plus pending bill of 650,000 due in three days; start at 470,000. Open Forecast & insights.                           | The expected-date case bottoms at 220,000. Delaying expected inflows by seven days produces a 180,000 shortfall. Dates, amounts and assumptions are labelled as estimates.                                 |
+| TC-024 | M5 / P1              | Create a past-due unpaid obligation and an assumed-unconfirmed scheduled payment. Open forecast and owed-payment screens.                                                                   | The overdue unpaid item is projected on today; the already-recorded assumption is disclosed and is not forecast or counted as an outstanding obligation again.                                             |
 
 ## Automated coverage already in the repository
 
@@ -39,7 +43,8 @@ Run `npm ci`, then `npm run dev` from the repository root. Open the Vite URL and
 - `src/domain/scheduleLifecycle.test.ts`: one-time catch-up/idempotency, unpaid preservation, month-end clamping, start/end boundaries, monthly catch-up and forecast generation.
 - `src/store/demoStore.test.ts`: empty first-use state, one-time and monthly store actions, persistence recovery, linked correction, delete and undo.
 - `e2e/navigation.spec.ts`: responsive navigation at 360/768/1280 px, opening balance/manual transaction flow, one-time lifecycle, monthly January-to-March catch-up, sample extraction review and confirmation, manual fallback, and upload type/empty/size validation.
+- `src/domain/reporting.test.ts`: reporting periods, settled-only totals, six-month movement, owed/payable grouping, overdue status, late-inflow regression, overdue projection and no double counting.
 
 ## Current gaps
 
-The responsive browser suite does not yet exercise a real screen reader or all keyboard interactions. There is no automated end-to-end test for malformed storage recovery, canceling a monthly rule, or transaction correction across a reload; domain/store tests cover parts of those behaviors. M5 and later requirements are intentionally not represented as passing cases here.
+The responsive browser suite does not yet exercise a real screen reader or all keyboard interactions. There is no automated end-to-end test for malformed storage recovery, canceling a monthly rule, or transaction correction across a reload; domain/store tests cover parts of those behaviors. M5 calculations have domain coverage; UI acceptance still needs a manual browser pass with representative records.

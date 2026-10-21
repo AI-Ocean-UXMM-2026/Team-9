@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { screens } from './routes';
 import { Placeholder } from '../features/Placeholder';
 import { CapturePage } from '../features/CapturePage';
+import { ForecastPage, OwedPage } from '../features/AnalysisPages';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
 import {
@@ -146,6 +147,10 @@ export function App() {
                         <SchedulesPage />
                       ) : id === 'capture' ? (
                         <CapturePage />
+                      ) : id === 'owed' ? (
+                        <OwedPage />
+                      ) : id === 'insights' ? (
+                        <ForecastPage />
                       ) : id === 'settings' ? (
                         <SettingsPage />
                       ) : (
