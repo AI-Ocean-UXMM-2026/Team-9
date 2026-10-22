@@ -17,8 +17,37 @@
   "payments": {
     "nav": "Payments",
     "title": "Payments",
-    "upcoming": "Upcoming",
-    "owed": "Owed"
+    "upcoming": "Schedule",
+    "owed": "Owed",
+    "schedule": "Schedule",
+    "owedToMe": "Owed to me",
+    "iOwe": "Owed to others"
+  },
+  "quickAdd": {
+    "title": "Add to your finances",
+    "open": "Choose an action",
+    "transaction": "Add transaction",
+    "transactionHelp": "Record income or an expense.",
+    "budget": "Set budget",
+    "budgetHelp": "Plan monthly spending by category.",
+    "uploadReceipt": "Upload photo receipt",
+    "uploadReceiptHelp": "Upload a receipt photo or screenshot."
+  },
+  "budget": {
+    "title": "Budget",
+    "monthlyTotal": "Monthly budget",
+    "categoryLimits": "Expense categories",
+    "categoryHelp": "Set a monthly limit for each expense category.",
+    "notSet": "Not set",
+    "setLimit": "Set limit",
+    "totalCategoryLimits": "Category limits: {{amount}} MMK · Spent this month: {{spent}} MMK",
+    "spentOf": "{{spent}} / {{limit}}",
+    "month": "month",
+    "save": "Save",
+    "cancel": "Cancel",
+    "limitFor": "Monthly limit for {{category}}",
+    "progressLabel": "Budget used for {{category}}",
+    "remove": "Remove {{category}} budget"
   },
   "activity": {
     "eyebrow": "YOUR RECORDS"
@@ -27,7 +56,7 @@
     "nav": "More",
     "title": "More tools",
     "eyebrow": "SUPPORTING TOOLS",
-    "description": "Ask about saved records, check record completeness, or update your starting point."
+    "description": "Ask AI about saved records or check record completeness."
   },
   "prototype": "FRONTEND PROTOTYPE",
   "phase": "M8 · Demo and security",
@@ -51,6 +80,7 @@
   },
   "opening": {
     "title": "Opening balance",
+    "firstRunTitle": "Add opening balance",
     "amount": "Opening amount (MMK)",
     "amountPlaceholder": "0",
     "referenceAt": "Balance date and time",
@@ -82,7 +112,8 @@
     "confirmed": "Confirmed paid",
     "category": "Category",
     "uncategorized": "No category",
-    "description": "Description"
+    "description": "Description",
+    "addNote": "Add note"
   },
   "category": {
     "client-income": "Client income",
@@ -113,7 +144,7 @@
     "nav": "Activity",
     "description": "Keep everyday income and expenses together.",
     "items": [
-      "Add, edit and search records",
+      "Add, edit and filter records",
       "Choose categories manually",
       "Confirm or correct an existing payment"
     ],
@@ -131,8 +162,14 @@
     "openingDayPrompt": "How does this transaction relate to the opening balance?",
     "alreadyIncluded": "It was already included in the opening balance",
     "afterReference": "It happened after the opening balance time",
-    "search": "Search records",
-    "filter": "Show",
+    "search": "Filter records",
+    "filter": "Transaction type",
+    "dateRange": "Filter by date",
+    "allDates": "All dates",
+    "specificMonth": "Select month",
+    "customRange": "Custom dates",
+    "fromDate": "Start date",
+    "toDate": "End date",
     "all": "All transactions",
     "empty": "No transactions match yet.",
     "deleted": "Transaction deleted.",
@@ -145,7 +182,7 @@
     "nav": "Home",
     "nextPayments": "Next payments",
     "allPayments": "All payments",
-    "noUpcoming": "No upcoming payments.",
+    "noUpcoming": "No scheduled payments yet.",
     "recent": "Recent activity",
     "empty": "No activity yet.",
     "outstanding": "Outstanding · receivable / payable",
@@ -167,22 +204,25 @@
     ]
   },
   "capture": {
-    "title": "Review a receipt or screenshot",
-    "nav": "Review a receipt",
-    "description": "Review a receipt or screenshot and confirm its details before saving a record.",
-    "uploadTitle": "Choose a receipt or screenshot",
+    "title": "Upload a receipt or screenshot",
+    "nav": "Upload photo receipt",
+    "description": "Upload a receipt or screenshot, then confirm its details before saving a record.",
+    "uploadTitle": "Upload a receipt or screenshot",
     "privacy": "Images stay in this tab and are never sent or stored. Only reviewed transaction fields are saved.",
-    "imageLabel": "Receipt or screenshot (JPEG, PNG, or WebP; up to 5 MB)",
+    "upload": "Upload",
+    "imageLabel": "JPEG, PNG, or WebP · up to 5 MB",
     "fileTypeError": "Choose a JPEG, PNG, or WebP image.",
-    "emptyFileError": "That image file is empty. Choose another file or enter the details manually.",
-    "fileSizeError": "The image must be 5 MB or smaller. Choose a smaller image or enter the details manually.",
+    "emptyFileError": "That image file is empty. Choose another file.",
+    "fileSizeError": "The image must be 5 MB or smaller. Choose a smaller image.",
     "previewAlt": "Local preview of the selected receipt or screenshot",
-    "simulate": "Simulate sample extraction",
-    "manual": "Image unreadable or unavailable · enter manually",
+    "extract": "Extract fields",
+    "manualFallback": "Fields unclear? Enter details manually",
+    "simulate": "Extract fields",
+    "manual": "Enter details manually",
     "sampleNotice": "Sample extraction · simulated, not OCR. These example fields may be wrong; review and correct each one.",
-    "manualNotice": "Manual entry selected. Enter the details you can read from the receipt, or continue without an image.",
+    "manualNotice": "Manual entry selected. Enter the details you can read from the uploaded image.",
     "sampleDescription": "Sample receipt purchase",
-    "chooseReviewMode": "Choose sample extraction or manual entry before reviewing fields.",
+    "chooseReviewMode": "Upload an image and extract its fields before reviewing.",
     "reviewTitle": "Review transaction fields",
     "reviewHelp": "",
     "confirmReview": "I reviewed and confirm these transaction fields.",
@@ -192,7 +232,7 @@
     "items": [
       "Local image preview and simulated sample extraction",
       "Correct fields and confirm before saving",
-      "Manual entry when an image is unreadable"
+      "Manual entry when extracted fields are unclear"
     ]
   },
   "owed": {
@@ -200,7 +240,7 @@
     "nav": "Owed payments",
     "description": "Keep incoming payments and outgoing obligations distinct.",
     "receivableTotal": "Owed to me",
-    "payableTotal": "I owe",
+    "payableTotal": "Owed to others",
     "receivables": "Incoming payments",
     "payables": "Outgoing obligations",
     "noReceivables": "No unpaid incoming payments.",
@@ -215,7 +255,7 @@
     "assumptionsExcluded": "These assumptions are not included in outstanding totals.",
     "items": [
       "Who owes me",
-      "Who I owe",
+      "Owed to others",
       "Due dates and outstanding obligations"
     ]
   },
@@ -236,9 +276,11 @@
     "save": "Save schedule",
     "saveError": "This schedule could not be saved. Check the details and try again.",
     "list": "Your payment schedules",
+    "scope": "Scheduled income and expenses appear here.",
     "empty": "No payment schedules yet.",
     "paymentDate": "Recorded payment date",
-    "correct": "Confirm or correct",
+    "confirm": "Confirm payment",
+    "correct": "Correct details",
     "markUnpaid": "Mark unpaid",
     "confirmUnpaid": "Mark this payment as unpaid? Its cash movement will be removed and the obligation restored.",
     "cancel": "Cancel schedule",
@@ -247,7 +289,7 @@
     "items": [
       "One-time and monthly schedules",
       "Auto-recorded · Unconfirmed payments when due",
-      "Confirm, correct or mark unpaid"
+      "Confirm payments, correct details or mark unpaid"
     ]
   },
   "scheduleStatus": {
@@ -259,7 +301,7 @@
   },
   "insights": {
     "nav": "Insights",
-    "title": "Forecast and insights",
+    "title": "Insights",
     "description": "Understand upcoming obligations and patterns in your records.",
     "ruleTitle": "Signals from your records",
     "ruleHelp": "Rule based. Not financial advice.",
@@ -311,13 +353,14 @@
   },
   "forecast": {
     "openingRequired": "Set an opening balance to view the cash-flow forecast.",
-    "disclaimer": "Estimated from your recorded available balance, unpaid obligations and scheduled occurrences. This is not a bank balance or financial advice. The delayed-inflow case moves expected income seven days later.",
+    "disclaimer": "Estimated from your records. Delayed income is shifted by seven days; this is not a bank balance or financial advice.",
     "baseCase": "Expected dates",
     "lateCase": "Income delayed by seven days",
     "lowPoint": "Lowest projected balance",
     "noShortfall": "No projected cash shortfall",
     "shortfall": "Projected shortfall: {{amount}} MMK",
-    "dailyTitle": "14-day daily forecast",
+    "dailyTitle": "14-day balance",
+    "chartAccessible": "Line chart of projected balance from {{start}} through {{end}} in MMK. The solid line shows expected dates; the dashed line delays income by seven days.",
     "date": "Date",
     "inflows": "Inflows",
     "outflows": "Outflows",
@@ -325,11 +368,11 @@
     "lateBalance": "Delayed-income balance"
   },
   "chat": {
-    "title": "Ask about your records",
-    "nav": "Ask about records",
+    "title": "Ask AI",
+    "nav": "Ask AI",
     "description": "A rule-based demo grounded in records saved in this browser.",
     "limits": "Rule-based demo only. Answers use records currently saved in this browser. Unsupported questions and requests for financial, legal or tax advice are declined.",
-    "questionLabel": "Ask about your records",
+    "questionLabel": "Ask AI about your records",
     "questionPlaceholder": "For example: What do I owe?",
     "ask": "Ask",
     "answerTitle": "Answer from your records",

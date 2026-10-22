@@ -68,7 +68,7 @@ export function ReadinessPage() {
           {!data.openingBalance ? (
             <Link
               className="min-h-11 rounded-xl border border-[#bccbc0] px-4 py-2 text-sm font-semibold"
-              to="/settings"
+              to="/"
             >
               {t('readiness.openingAction')}
             </Link>

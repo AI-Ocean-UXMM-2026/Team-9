@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus } from 'lucide-react';
 import { CategorySuggestion } from '../components/CategorySuggestion';
 import type { Transaction } from '../domain/types';
 import { clockForTimeZone, systemClock } from '../services/clock';
@@ -52,7 +53,7 @@ export function CapturePage() {
   const openingDay = data.openingBalance
     ? dateInTimeZone(data.openingBalance.referenceAt, data.openingBalance.timeZone)
     : '';
-  const showOpeningChoice = Boolean(data.openingBalance && date === openingDay);
+  const showOpeningChoice = Boolean(data.openingBalance && date === openingDay && cashStatus === 'settled');
 
   function selectFile(candidate: File | undefined) {
     setError('');
@@ -199,23 +200,26 @@ export function CapturePage() {
       {!data.openingBalance ? (
         <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
           {t('transactions.openingRequired')}{' '}
-          <Link className="font-semibold underline" to="/settings">
-            {t('settings.nav')}
+          <Link className="font-semibold underline" to="/">
+            {t('dashboard.nav')}
           </Link>
         </p>
       ) : null}
 
       <section className="rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
-        <h2 className="text-xl font-semibold">{t('capture.uploadTitle')}</h2>
-        <p className="mt-2 text-sm text-muted">{t('capture.privacy')}</p>
-        <label className="mt-5 grid gap-2 text-sm font-medium">
-          {t('capture.imageLabel')}
+        <p className="text-sm text-muted">{t('capture.privacy')}</p>
+        <label className="capture-upload-control mt-5">
+          <Plus size={20} strokeWidth={2.2} aria-hidden="true" />
+          <span>{t('capture.upload')}</span>
           <input
-            aria-label={t('capture.imageLabel')}
-            className="min-h-12 rounded-xl border border-[#bccbc0] p-3"
+            aria-label={t('capture.upload')}
+            className="capture-file-input"
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => selectFile(event.currentTarget.files?.[0])}
+            onChange={(event) => {
+              selectFile(event.currentTarget.files?.[0]);
+              event.currentTarget.value = '';
+            }}
           />
         </label>
         {file ? (
@@ -240,15 +244,17 @@ export function CapturePage() {
             className="min-h-11 rounded-xl bg-accent px-4 font-semibold text-white disabled:opacity-50"
             onClick={useSampleExtraction}
           >
-            {t('capture.simulate')}
+            {t('capture.extract')}
           </button>
-          <button
-            type="button"
-            className="min-h-11 rounded-xl border border-[#bccbc0] px-4 font-semibold"
-            onClick={enterManually}
-          >
-            {t('capture.manual')}
-          </button>
+          {file && extraction === 'sample' ? (
+            <button
+              type="button"
+              className="min-h-11 rounded-xl border border-[#bccbc0] px-4 font-semibold"
+              onClick={enterManually}
+            >
+              {t('capture.manualFallback')}
+            </button>
+          ) : null}
         </div>
         {extraction ? (
           <p className="mt-4 rounded-xl bg-[#edf3ec] p-4 text-sm" role="status">

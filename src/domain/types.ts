@@ -116,6 +116,12 @@ export const categorySchema = z.object({
 });
 export type Category = z.infer<typeof categorySchema>;
 
+export const categoryBudgetSchema = z.object({
+  categoryId: idSchema,
+  amount: moneySchema,
+});
+export type CategoryBudget = z.infer<typeof categoryBudgetSchema>;
+
 const occurrenceHistorySchema = z.object({
   action: z.enum(['assumed', 'confirmed', 'corrected', 'marked_unpaid']),
   at: isoInstantSchema,
@@ -221,6 +227,8 @@ const appDataShape = z.object({
   scheduleRules: z.array(scheduledRuleSchema).max(10_000),
   paymentOccurrences: z.array(paymentOccurrenceSchema).max(50_000),
   duplicateReviews: z.array(duplicateReviewSchema).max(50_000),
+  monthlyBudget: z.number().int().nonnegative().max(MMK_MAX).nullable().default(null),
+  categoryBudgets: z.array(categoryBudgetSchema).max(500).default([]),
   checklist: z.record(z.string().max(120), z.boolean()),
 });
 export const appDataSchema = appDataShape.superRefine((data, context) => {
@@ -242,6 +250,22 @@ export const appDataSchema = appDataShape.superRefine((data, context) => {
   unique(data.scheduleRules, 'scheduleRules');
   unique(data.paymentOccurrences, 'paymentOccurrences');
   unique(data.duplicateReviews, 'duplicateReviews');
+  const budgetCategories = new Set<string>();
+  data.categoryBudgets.forEach((budget, index) => {
+    if (budgetCategories.has(budget.categoryId))
+      context.addIssue({
+        code: 'custom',
+        path: ['categoryBudgets', index, 'categoryId'],
+        message: 'A category can have only one monthly budget.',
+      });
+    budgetCategories.add(budget.categoryId);
+    if (!data.categories.some((category) => category.id === budget.categoryId && (category.type === 'expense' || category.type === 'both')))
+      context.addIssue({
+        code: 'custom',
+        path: ['categoryBudgets', index, 'categoryId'],
+        message: 'A budget must reference an expense category.',
+      });
+  });
 
   const transactions = new Map(
     data.transactions.map((transaction) => [transaction.id, transaction]),
@@ -470,6 +494,8 @@ export const emptyAppData = (): AppData => ({
   scheduleRules: [],
   paymentOccurrences: [],
   duplicateReviews: [],
+  monthlyBudget: null,
+  categoryBudgets: [],
   checklist: {},
 });
 

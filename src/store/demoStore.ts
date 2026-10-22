@@ -28,12 +28,15 @@ export interface DemoStore extends PersistedStore {
   setTimeZone(timeZone: string): void;
   replaceData(data: AppData): void;
   setOpeningBalance(openingBalance: AppData['openingBalance']): void;
+  setMonthlyBudget(amount: number | null): void;
+  setCategoryBudget(categoryId: string, amount: number | null): void;
   saveTransaction(transaction: Transaction): void;
   deleteTransaction(id: string): Transaction | null;
   restoreTransaction(transaction: Transaction): void;
   createScheduleRule(rule: ScheduledRule, clock?: Clock): void;
   processDueSchedules(clock?: Clock): void;
   cancelScheduleRule(ruleId: string): void;
+  confirmOccurrencePayment(occurrenceId: string): void;
   markOccurrenceUnpaid(occurrenceId: string): void;
   resolveDuplicate(review: DuplicateReview): void;
   setReadinessDocument(id: ReadinessDocumentId, available: boolean): void;
@@ -80,6 +83,16 @@ export function createDemoStore(
             openingBalance,
           });
           set({ data: validated });
+        },
+        setMonthlyBudget: (amount) => {
+          const current = get().data;
+          set({ data: appDataSchema.parse({ ...current, monthlyBudget: amount }) });
+        },
+        setCategoryBudget: (categoryId, amount) => {
+          const current = get().data;
+          const categoryBudgets = current.categoryBudgets.filter((item) => item.categoryId !== categoryId);
+          if (amount !== null) categoryBudgets.push({ categoryId, amount });
+          set({ data: appDataSchema.parse({ ...current, categoryBudgets }) });
         },
         saveTransaction: (transaction) => {
           const current = get().data;
@@ -303,6 +316,48 @@ export function createDemoStore(
                     (item) => item.id !== occurrenceId,
                   )
                 : current.paymentOccurrences,
+            }),
+          });
+        },
+        confirmOccurrencePayment: (occurrenceId) => {
+          const current = get().data;
+          const occurrence = current.paymentOccurrences.find(
+            (item) => item.id === occurrenceId,
+          );
+          if (!occurrence || occurrence.status !== 'assumed_unconfirmed')
+            return;
+          const payment = current.transactions.find(
+            (item) => item.id === occurrence.paymentTransactionId,
+          );
+          if (!payment)
+            throw new Error('The occurrence payment record is missing.');
+          const now = systemClock.now().toISOString();
+          const transactions = current.transactions.map((item) =>
+            item.id === payment.id
+              ? {
+                  ...item,
+                  confirmationStatus: 'confirmed' as const,
+                  updatedAt: now,
+                }
+              : item,
+          );
+          const paymentOccurrences = current.paymentOccurrences.map((item) =>
+            item.id === occurrenceId && item.status === 'assumed_unconfirmed'
+              ? {
+                  ...item,
+                  status: 'confirmed_paid' as const,
+                  history: [
+                    ...item.history,
+                    { action: 'confirmed' as const, at: now },
+                  ].slice(-100),
+                }
+              : item,
+          );
+          set({
+            data: appDataSchema.parse({
+              ...current,
+              transactions,
+              paymentOccurrences,
             }),
           });
         },

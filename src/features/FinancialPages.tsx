@@ -5,15 +5,17 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowDownRight,
+  ArrowDown,
+  ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
-  ChevronRight,
+  ArrowUp,
   CalendarClock,
+  CalendarDays,
   CircleAlert,
+  CircleMinus,
   Plus,
   ReceiptText,
   TrendingDown,
@@ -21,6 +23,8 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { CategorySuggestion } from '../components/CategorySuggestion';
+import { ActivityCategoryIcon } from '../components/ActivityCategoryIcon';
+import { ActivityStatusIcon } from '../components/ActivityStatusIcon';
 import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
 import {
   getReportingRange,
@@ -100,17 +104,31 @@ export function DashboardPage() {
       .filter((occurrence) => occurrence.status === 'scheduled' && occurrence.originalDueDate >= today)
       .flatMap((occurrence) => {
         const rule = data.scheduleRules.find((item) => item.id === occurrence.ruleId);
-        return rule ? [{ id: occurrence.id, date: occurrence.originalDueDate, amount: rule.amount, description: rule.description || t(`category.${rule.categoryId ?? 'uncategorized'}`) }] : [];
+        return rule ? [{ id: occurrence.id, date: occurrence.originalDueDate, amount: rule.amount, categoryId: rule.categoryId }] : [];
       }),
     ...data.transactions
       .filter((transaction) => transaction.cashStatus === 'pending' && transaction.dueDate && transaction.dueDate >= today)
-      .map((transaction) => ({ id: transaction.id, date: transaction.dueDate ?? transaction.date, amount: transaction.amount, description: transaction.description || t(`category.${transaction.categoryId ?? 'uncategorized'}`) })),
+      .map((transaction) => ({ id: transaction.id, date: transaction.dueDate ?? transaction.date, amount: transaction.amount, categoryId: transaction.categoryId })),
   ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
   useEffect(() => {
     if (location.hash === '#opening-balance') {
       window.requestAnimationFrame(() => document.getElementById('opening-balance')?.scrollIntoView({ block: 'start' }));
     }
   }, [location.hash]);
+  if (!data.openingBalance) {
+    return (
+      <div className="first-run-balance">
+        <header className="page-heading">
+          <h1 tabIndex={-1}>{t('dashboard.nav')}</h1>
+        </header>
+        <section className="first-run-balance-card surface-card" id="opening-balance">
+          <span className="icon-circle icon-circle-blue"><WalletCards size={21} aria-hidden="true" /></span>
+          <h2>{t('opening.firstRunTitle')}</h2>
+          <OpeningBalanceForm key={timeZone} />
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="dashboard-page">
       <header className="page-heading">
@@ -132,28 +150,14 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
-        {!data.openingBalance ? (
-          <div className="balance-empty-state">
-            <div className="opening-form-wrap">
-              <h2>{t('opening.title')}</h2>
-              <OpeningBalanceForm key={timeZone} />
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className="balance-amount">
-              {money(result.amount)} <span>MMK</span>
-            </p>
-            <p className="balance-asof">
-              {t('balance.asOf', {
-                date: businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone),
-              })}
-            </p>
-            <Link className="balance-reference-link" to="/settings">
-              {t('settings.nav')} <ArrowRight size={15} />
-            </Link>
-          </>
-        )}
+        <p className="balance-amount">
+          {money(result.amount)} <span>MMK</span>
+        </p>
+        <p className="balance-asof">
+          {t('balance.asOf', {
+            date: businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone),
+          })}
+        </p>
       </section>
 
       {result.unclassifiedOpeningDayIds.length ? (
@@ -176,7 +180,7 @@ export function DashboardPage() {
           <p>
             {t('balance.unconfirmedDisclosure', { count: unconfirmedCount })}
           </p>
-          <Link to="/payments/upcoming">
+          <Link to="/payments/schedule">
             {t('payments.nav')}
             <ArrowRight size={16} />
           </Link>
@@ -184,11 +188,11 @@ export function DashboardPage() {
       ) : null}
 
       <section className="home-upcoming surface-card">
-        <div className="section-heading-row">
+        <div className="section-heading-row home-upcoming-heading">
           <div>
             <h2>{t('dashboard.nextPayments')}</h2>
           </div>
-          <Link className="text-link" to="/payments/upcoming">
+          <Link className="text-link" to="/payments/schedule">
             {t('dashboard.allPayments')} <ArrowRight size={15} />
           </Link>
         </div>
@@ -198,7 +202,14 @@ export function DashboardPage() {
               return (
                 <li key={item.id}>
                   <span className="upcoming-date">{item.date}</span>
-                  <span className="upcoming-description">{item.description}</span>
+                  <span className="upcoming-category">
+                    <span className="upcoming-category-icon">
+                      <ActivityCategoryIcon categoryId={item.categoryId} />
+                    </span>
+                    <span className="upcoming-description">
+                      {t(`category.${item.categoryId ?? 'uncategorized'}`)}
+                    </span>
+                  </span>
                   <strong>{money(item.amount)} <small>MMK</small></strong>
                 </li>
               );
@@ -210,9 +221,9 @@ export function DashboardPage() {
       </section>
 
       <section className="summary-grid" aria-label={t('dashboard.outstanding')}>
-        <Link to="/payments/owed" className="summary-card surface-card">
+        <Link to="/payments/owed-to-me" className="summary-card summary-card-tone-income surface-card">
           <div className="summary-card-icon summary-icon-positive">
-            <ArrowDownRight size={19} />
+            <ArrowDown size={19} />
           </div>
           <div className="summary-card-heading">
             <span>{t('owed.receivableTotal')}</span>
@@ -222,9 +233,9 @@ export function DashboardPage() {
             {money(outstanding.receivableTotal)} <small>MMK</small>
           </p>
         </Link>
-        <Link to="/payments/owed" className="summary-card surface-card">
+        <Link to="/payments/i-owe" className="summary-card summary-card-tone-expense surface-card">
           <div className="summary-card-icon summary-icon-negative">
-            <ArrowUpRight size={19} />
+            <ArrowUp size={19} />
           </div>
           <div className="summary-card-heading">
             <span>{t('owed.payableTotal')}</span>
@@ -335,7 +346,7 @@ export function DashboardPage() {
             <p>{t('dashboard.empty')}</p>
             <Link
               className="pill-button pill-button-primary"
-              to="/transactions#transaction-form"
+              to="/transactions/new"
             >
               <Plus size={17} />
               {t('transactions.add')}
@@ -344,18 +355,17 @@ export function DashboardPage() {
         )}
       </section>
 
-      <details className="movement-details surface-card">
-        <summary>
+      <section className="movement-details surface-card" aria-labelledby="cash-movement-heading">
+        <div className="movement-heading">
           <span>
             <span className="summary-card-icon summary-icon-forecast">
               <TrendingUp size={19} />
             </span>
             <span>
-              <strong>{t('dashboard.periodSummary')}</strong>
+              <strong id="cash-movement-heading">{t('dashboard.periodSummary')}</strong>
             </span>
           </span>
-          <ChevronRight size={19} />
-        </summary>
+        </div>
         <div className="movement-content">
           <div className="movement-toolbar">
             <p>
@@ -392,9 +402,9 @@ export function DashboardPage() {
           <p className="movement-note">
             {t('dashboard.settledOnly', { count: summary.transactionCount })}
           </p>
-          <MovementChart values={monthlyMovement} />
+          <MovementChart key={period} values={monthlyMovement.slice(-4)} />
         </div>
-      </details>
+      </section>
     </div>
   );
 }
@@ -425,35 +435,43 @@ function MovementChart({
       new Date(`${month}-01T12:00:00Z`),
     );
   return (
-    <div className="mt-4 overflow-x-auto">
+    <div className="movement-chart mt-4">
       <svg
-        className="h-48 min-w-[34rem] w-full"
+        className="movement-chart-svg h-48 w-full"
         viewBox="0 0 600 190"
         role="img"
         aria-label={t('dashboard.monthlyChartAccessible')}
       >
         <line x1="20" y1="150" x2="580" y2="150" stroke="#cdddcf" />
         {values.map((item, index) => {
-          const center = 65 + index * 94;
+          const plotLeft = 90;
+          const plotRight = 510;
+          const center = values.length > 1
+            ? plotLeft + (index / (values.length - 1)) * (plotRight - plotLeft)
+            : 300;
           const incomeHeight = (item.income / max) * 118;
           const expenseHeight = (item.expenses / max) * 118;
           return (
             <g key={item.month}>
               <rect
+                className="movement-chart-bar movement-chart-bar-income"
                 x={center - 20}
                 y={150 - incomeHeight}
                 width="22"
                 height={incomeHeight}
                 rx="5"
-                fill="#18745b"
+                fill="#0866e8"
+                style={{ animationDelay: `${index * 85}ms` }}
               />
               <rect
+                className="movement-chart-bar movement-chart-bar-expense"
                 x={center + 5}
                 y={150 - expenseHeight}
                 width="22"
                 height={expenseHeight}
                 rx="5"
                 fill="#c77b35"
+                style={{ animationDelay: `${index * 85 + 45}ms` }}
               />
               <text
                 x={center + 3}
@@ -599,11 +617,121 @@ export function SettingsPage() {
           </select>
         </label>
       </section>
-      <section className="surface-card settings-panel">
-        <h2 className="mb-5 text-xl font-semibold">{t('opening.title')}</h2>
-        <OpeningBalanceForm key={timeZone} />
-      </section>
     </>
+  );
+}
+
+export function BudgetPage() {
+  const { t } = useTranslation();
+  const data = useDemoStore((state) => state.data);
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
+  const setMonthlyBudget = useDemoStore((state) => state.setMonthlyBudget);
+  const setCategoryBudget = useDemoStore((state) => state.setCategoryBudget);
+  const expenseCategories = data.categories.filter((category) => category.type === 'expense' || category.type === 'both');
+  const [editingMonthly, setEditingMonthly] = useState(false);
+  const [monthlyAmount, setMonthlyAmount] = useState(data.monthlyBudget === null ? '' : String(data.monthlyBudget));
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [categoryAmount, setCategoryAmount] = useState('');
+  const [error, setError] = useState('');
+  const monthlySpending = new Map<string, number>();
+  let totalMonthlySpending = 0;
+  for (const transaction of data.transactions) {
+    if (transaction.type !== 'expense' || transaction.cashStatus !== 'settled' || transaction.date.slice(0, 7) !== today.slice(0, 7)) continue;
+    totalMonthlySpending += transaction.amount;
+    if (transaction.categoryId) monthlySpending.set(transaction.categoryId, (monthlySpending.get(transaction.categoryId) ?? 0) + transaction.amount);
+  }
+  const categoryBudgetMap = new Map(data.categoryBudgets.map((budget) => [budget.categoryId, budget.amount]));
+  const totalCategoryLimits = data.categoryBudgets.reduce((total, budget) => total + budget.amount, 0);
+  function saveMonthly(event: FormEvent) {
+    event.preventDefault();
+    if (monthlyAmount && (!/^\d+$/.test(monthlyAmount) || Number(monthlyAmount) > 1_000_000_000_000)) {
+      setError(t('form.amountError'));
+      return;
+    }
+    setError('');
+    setMonthlyBudget(monthlyAmount ? Number(monthlyAmount) : null);
+    setEditingMonthly(false);
+  }
+  function openCategoryEditor(categoryId: string) {
+    setEditingCategory(categoryId);
+    setCategoryAmount(categoryBudgetMap.has(categoryId) ? String(categoryBudgetMap.get(categoryId)) : '');
+    setError('');
+  }
+  function saveCategory(event: FormEvent) {
+    event.preventDefault();
+    if (!editingCategory || !/^\d+$/.test(categoryAmount) || Number(categoryAmount) <= 0 || Number(categoryAmount) > 1_000_000_000_000) {
+      setError(t('form.amountError'));
+      return;
+    }
+    setCategoryBudget(editingCategory, Number(categoryAmount));
+    setEditingCategory(null);
+    setCategoryAmount('');
+    setError('');
+  }
+  return (
+    <div className="budget-page">
+      <header className="page-heading"><h1 tabIndex={-1}>{t('budget.title')}</h1></header>
+      <section className="budget-total-card surface-card">
+        <span className="budget-total-icon"><WalletCards size={22} aria-hidden="true" /></span>
+        <div className="budget-total-copy">
+          <h2>{t('budget.monthlyTotal')}</h2>
+          {editingMonthly ? (
+            <form className="budget-inline-form" onSubmit={saveMonthly}>
+              <label className="sr-only" htmlFor="monthly-budget-amount">{t('budget.monthlyTotal')}</label>
+              <input id="monthly-budget-amount" type="number" min="0" step="1" inputMode="numeric" placeholder="0" value={monthlyAmount} onChange={(event) => setMonthlyAmount(event.target.value)} autoFocus />
+              <span>MMK</span>
+              <button type="submit" className="budget-save-button">{t('budget.save')}</button>
+              <button type="button" className="budget-cancel-button" onClick={() => { setEditingMonthly(false); setMonthlyAmount(data.monthlyBudget === null ? '' : String(data.monthlyBudget)); setError(''); }}>{t('budget.cancel')}</button>
+            </form>
+          ) : (
+            <p className="budget-total-amount">{data.monthlyBudget === null ? t('budget.notSet') : `${money(data.monthlyBudget)} MMK`}</p>
+          )}
+          <p className="budget-total-note">{t('budget.totalCategoryLimits', { amount: money(totalCategoryLimits), spent: money(totalMonthlySpending) })}</p>
+        </div>
+        {!editingMonthly ? <button type="button" className="budget-edit-button" onClick={() => { setMonthlyAmount(data.monthlyBudget === null ? '' : String(data.monthlyBudget)); setEditingMonthly(true); }}>{t(data.monthlyBudget === null ? 'budget.setLimit' : 'form.edit')}</button> : null}
+      </section>
+      {error ? <p className="budget-error" role="alert">{error}</p> : null}
+      <section className="budget-category-section">
+        <div className="budget-section-heading"><h2>{t('budget.categoryLimits')}</h2><p>{t('budget.categoryHelp')}</p></div>
+        <ul className="budget-category-list">
+          {expenseCategories.map((category) => {
+            const limit = categoryBudgetMap.get(category.id);
+            const spent = monthlySpending.get(category.id) ?? 0;
+            const progress = limit ? Math.min(100, Math.round(spent / limit * 100)) : 0;
+            const categoryLabel = t(`category.${category.id}`);
+            return (
+              <li className="budget-category-card" key={category.id}>
+                {limit && editingCategory !== category.id ? <button type="button" className="budget-remove-button" aria-label={t('budget.remove', { category: categoryLabel })} onClick={() => setCategoryBudget(category.id, null)}><CircleMinus size={19} aria-hidden="true" /></button> : null}
+                <span className="budget-category-icon"><WalletCards size={19} aria-hidden="true" /></span>
+                <div className="budget-category-main">
+                  <strong>{categoryLabel}</strong>
+                  {editingCategory === category.id ? (
+                    <form className="budget-inline-form budget-category-form" onSubmit={saveCategory}>
+                      <label className="sr-only" htmlFor={`budget-${category.id}`}>{t('budget.limitFor', { category: categoryLabel })}</label>
+                      <input id={`budget-${category.id}`} type="number" min="1" step="1" inputMode="numeric" placeholder="0" value={categoryAmount} onChange={(event) => setCategoryAmount(event.target.value)} autoFocus />
+                      <span>MMK / {t('budget.month')}</span>
+                      <button type="submit" className="budget-save-button">{t('budget.save')}</button>
+                      <button type="button" className="budget-cancel-button" onClick={() => { setEditingCategory(null); setError(''); }}>{t('budget.cancel')}</button>
+                    </form>
+                  ) : limit ? (
+                    <>
+                      <span className="budget-spending">{t('budget.spentOf', { spent: money(spent), limit: money(limit) })} MMK</span>
+                      <span className={`budget-progress-track${spent > limit ? ' budget-progress-over' : ''}`} role="progressbar" aria-label={t('budget.progressLabel', { category: categoryLabel })} aria-valuemin={0} aria-valuemax={limit} aria-valuenow={Math.min(spent, limit)}><span style={{ width: `${progress}%` }} /></span>
+                    </>
+                  ) : <span className="budget-unset-label">{t('budget.notSet')}</span>}
+                </div>
+                {editingCategory !== category.id ? (
+                  <div className="budget-row-actions">
+                    <button type="button" className="budget-edit-button" onClick={() => openCategoryEditor(category.id)}>{t(limit ? 'form.edit' : 'budget.setLimit')}</button>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </div>
   );
 }
 
@@ -614,6 +742,7 @@ export function SchedulesPage() {
   const today = clockForTimeZone(timeZone).today();
   const createSchedule = useDemoStore((state) => state.createScheduleRule);
   const cancelSchedule = useDemoStore((state) => state.cancelScheduleRule);
+  const confirmPayment = useDemoStore((state) => state.confirmOccurrencePayment);
   const markUnpaid = useDemoStore((state) => state.markOccurrenceUnpaid);
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [repeat, setRepeat] = useState<'one_time' | 'monthly'>('one_time');
@@ -690,19 +819,31 @@ export function SchedulesPage() {
         : [{ rule, occurrence: null }]),
     );
     return all;
-  }, []);
+  }, []).sort((a, b) => {
+    const dueDateA = a.occurrence?.originalDueDate ??
+      (a.rule.schedule.kind === 'one_time'
+        ? a.rule.schedule.dueDate
+        : a.rule.schedule.startDate);
+    const dueDateB = b.occurrence?.originalDueDate ??
+      (b.rule.schedule.kind === 'one_time'
+        ? b.rule.schedule.dueDate
+        : b.rule.schedule.startDate);
+    return dueDateA.localeCompare(dueDateB);
+  });
   return (
-    <>
+    <div className="payments-schedule-page">
       <header className="page-heading">
         <h1 tabIndex={-1}>{t('payments.title')}</h1>
         <nav className="section-tabs" aria-label={t('payments.nav')}>
-          <Link className="section-tab section-tab-active" aria-current="page" to="/payments/upcoming">{t('payments.upcoming')}</Link>
-          <Link className="section-tab" to="/payments/owed">{t('payments.owed')}</Link>
+          <Link className="section-tab section-tab-active" aria-current="page" to="/payments/schedule">{t('payments.schedule')}</Link>
+          <Link className="section-tab" to="/payments/owed-to-me">{t('payments.owedToMe')}</Link>
+          <Link className="section-tab" to="/payments/i-owe">{t('payments.iOwe')}</Link>
         </nav>
       </header>
       <div className="section-toolbar">
         <div>
           <h2>{t('schedules.list')}</h2>
+          <p>{t('schedules.scope')}</p>
         </div>
         <button className="action-button" type="button" aria-expanded={showScheduleForm} aria-controls="schedule-form-panel" onClick={() => setShowScheduleForm(!showScheduleForm)}>
           <Plus size={18} aria-hidden="true" />{t('schedules.add')}
@@ -826,8 +967,7 @@ export function SchedulesPage() {
           </div>
         </form>
       </section>
-      <section className="surface-card schedule-list-panel">
-        <h2 className="text-xl font-semibold">{t('schedules.list')}</h2>
+      <section className="surface-card schedule-list-panel" aria-label={t('schedules.list')}>
         {rows.length ? (
           <ul className="mt-4 divide-y divide-[#e4e9e2]">
             {rows.map(({ rule, occurrence }) => {
@@ -848,43 +988,57 @@ export function SchedulesPage() {
                 occurrence?.status === 'scheduled' &&
                 (rule.schedule.kind === 'one_time' ||
                   occurrence.originalDueDate === firstScheduledDate);
+              const statusKey = occurrence?.status ?? (rule.active ? 'scheduled' : 'canceled');
               return (
                 <li
                   key={occurrence?.id ?? rule.id}
-                  className="flex flex-wrap items-center justify-between gap-4 py-5"
+                  className="schedule-row-item flex flex-wrap items-center justify-between gap-4 py-5"
                 >
-                  <div className="min-w-0">
-                    <p className="font-semibold">
-                      {rule.description ||
-                        t(`category.${rule.categoryId ?? 'uncategorized'}`)}
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      {t(`transaction.${rule.type}`)} · {due} ·{' '}
-                      {money(rule.amount)} MMK
-                    </p>
-                    {rule.schedule.kind === 'monthly' ? (
-                      <p className="text-sm text-muted">
-                        {t('schedules.monthlyDayLabel', {
-                          day: rule.schedule.dayOfMonth,
-                        })}
+                  <div className="schedule-row-main">
+                    <div className="schedule-category-heading">
+                      <span className="schedule-category-icon">
+                        <ActivityCategoryIcon categoryId={rule.categoryId} />
+                      </span>
+                      <p className="schedule-category-name">
+                        {t(`category.${rule.categoryId ?? 'uncategorized'}`)}
                       </p>
+                    </div>
+                    {rule.description && rule.description !== t(`category.${rule.categoryId ?? 'uncategorized'}`) ? (
+                      <p className="schedule-row-description">{rule.description}</p>
                     ) : null}
-                    <p className="mt-2 text-sm font-medium text-accent">
-                      {t(
-                        occurrence
-                          ? `scheduleStatus.${occurrence.status}`
-                          : rule.active
-                            ? 'scheduleStatus.scheduled'
-                            : 'scheduleStatus.canceled',
+                    <div className="schedule-row-meta">
+                      <span>
+                        {due}
+                        {rule.schedule.kind === 'monthly' ? ` · ${t('schedules.monthly')}` : ''}
+                      </span>
+                      {statusKey === 'scheduled' || statusKey === 'assumed_unconfirmed' ? (
+                        <ActivityStatusIcon status="pending" label={t(`scheduleStatus.${statusKey}`)} />
+                      ) : statusKey === 'confirmed_paid' ? (
+                        <ActivityStatusIcon status="settled" label={t(`scheduleStatus.${statusKey}`)} />
+                      ) : (
+                        <span className="schedule-row-status-text">
+                          {t(`scheduleStatus.${statusKey}`)}
+                        </span>
                       )}
-                    </p>
+                    </div>
                     {occurrence && occurrence.status !== 'scheduled' ? (
                       <p className="text-sm text-muted">
                         {t('schedules.paymentDate')}: {occurrence.paymentDate}
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="schedule-row-actions">
+                    <strong className={`schedule-row-amount schedule-row-amount-${rule.type}`}>
+                      {rule.type === 'income' ? '+' : '−'}{money(rule.amount)} MMK
+                    </strong>
+                    {occurrence?.status === 'assumed_unconfirmed' ? (
+                      <button
+                        className="min-h-11 rounded-lg border px-3 text-sm font-medium"
+                        onClick={() => confirmPayment(occurrence.id)}
+                      >
+                        {t('schedules.confirm')}
+                      </button>
+                    ) : null}
                     {occurrence && occurrence.status !== 'scheduled' ? (
                       <Link
                         className="min-h-11 rounded-lg border px-3 py-2 text-sm font-medium"
@@ -908,7 +1062,7 @@ export function SchedulesPage() {
                     ) : null}
                     {canCancel ? (
                       <button
-                        className="min-h-11 rounded-lg border px-3 text-sm font-medium text-red-800"
+                        className="schedule-cancel-button"
                         onClick={() => {
                           if (window.confirm(t('schedules.confirmCancel')))
                             cancelSchedule(rule.id);
@@ -926,7 +1080,7 @@ export function SchedulesPage() {
           <p className="mt-4 text-muted">{t('schedules.empty')}</p>
         )}
       </section>
-    </>
+    </div>
   );
 }
 
@@ -939,15 +1093,20 @@ export function TransactionsPage() {
   const remove = useDemoStore((state) => state.deleteTransaction);
   const restore = useDemoStore((state) => state.restoreTransaction);
   const [editing, setEditing] = useState<Transaction | null>(null);
-  const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'month' | 'custom'>('all');
+  const [filterMonth, setFilterMonth] = useState(today.slice(0, 7));
+  const [rangeStart, setRangeStart] = useState('');
+  const [rangeEnd, setRangeEnd] = useState('');
   const [error, setError] = useState('');
   const [undo, setUndo] = useState<Transaction | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const [formOpen, setFormOpen] = useState(() => window.location.hash === '#transaction-form');
+  const navigate = useNavigate();
+  const isComposer = location.pathname === '/transactions/new';
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
+  const amountLength = amount.replace(/\D/g, '').length;
   const [date, setDate] = useState(today);
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
@@ -963,26 +1122,25 @@ export function TransactionsPage() {
     ? businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone)
     : '';
   const showOpeningChoice = Boolean(
-    data.openingBalance && date === openingDay && !editing?.occurredAt,
+    data.openingBalance && date === openingDay && cashStatus === 'settled' && !editing?.occurredAt,
   );
   const categories = data.categories.filter(
     (category) => category.type === type || category.type === 'both',
   );
   useEffect(() => {
     if (location.hash === '#transaction-form') {
-      setFormOpen(true);
-      window.requestAnimationFrame(() => document.getElementById('transaction-form')?.scrollIntoView({ block: 'start' }));
+      navigate('/transactions/new', { replace: true });
     }
-  }, [location.hash]);
+  }, [location.hash, navigate]);
   const filtered = data.transactions
     .filter(
       (item) =>
         (filter === 'all' ||
           item.type === filter ||
           item.cashStatus === filter) &&
-        `${item.description ?? ''} ${item.date} ${item.categoryId ?? ''}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
+        (dateFilter === 'all' ||
+          (dateFilter === 'month' && item.date.slice(0, 7) === filterMonth) ||
+          (dateFilter === 'custom' && (!rangeStart || item.date >= rangeStart) && (!rangeEnd || item.date <= rangeEnd))),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
   function reset() {
@@ -997,11 +1155,10 @@ export function TransactionsPage() {
     setOpeningDayDisposition('');
     setConfirmationStatus('not_applicable');
     setError('');
-    setFormOpen(false);
+    navigate('/transactions');
   }
-  const edit = useCallback(
+  const loadEdit = useCallback(
     (item: Transaction) => {
-      setFormOpen(true);
       setEditing(item);
       setType(item.type);
       setAmount(String(item.amount));
@@ -1021,26 +1178,27 @@ export function TransactionsPage() {
       setOpeningDayDisposition(item.openingDayDisposition ?? '');
       setConfirmationStatus(item.confirmationStatus);
       setError('');
-      window.requestAnimationFrame(() =>
-        document.getElementById('transaction-form')?.scrollIntoView({ block: 'start' }),
-      );
     },
     [data.paymentOccurrences],
   );
+  const edit = useCallback((item: Transaction) => {
+    navigate(`/transactions/new?edit=${encodeURIComponent(item.id)}`);
+  }, [navigate]);
   useEffect(() => {
     const id = searchParams.get('edit');
+    if (!id) return undefined;
     const item = id
       ? data.transactions.find((transaction) => transaction.id === id)
       : undefined;
-    if (item) {
-      const timeout = window.setTimeout(() => {
-        edit(item);
-        setSearchParams({}, { replace: true });
-      }, 0);
-      return () => window.clearTimeout(timeout);
+    if (!item) return undefined;
+    if (!isComposer) {
+      navigate(`/transactions/new?edit=${encodeURIComponent(id)}`, { replace: true });
+      return undefined;
     }
+    loadEdit(item);
+    setSearchParams({}, { replace: true });
     return undefined;
-  }, [data.transactions, edit, searchParams, setSearchParams]);
+  }, [data.transactions, isComposer, loadEdit, navigate, searchParams, setSearchParams]);
   function submit(event: FormEvent) {
     event.preventDefault();
     setError('');
@@ -1105,224 +1263,172 @@ export function TransactionsPage() {
     });
     reset();
   }
+  if (isComposer) {
+    return (
+      <section className="transaction-composer-page">
+        <header className="transaction-composer-header">
+          <button type="button" className="composer-close" aria-label={t('form.cancel')} onClick={reset}>
+            <ArrowLeft size={20} aria-hidden="true" />
+          </button>
+          <h1 tabIndex={-1}>{editing ? t('transactions.edit') : t('transactions.add')}</h1>
+        </header>
+        {editing?.paymentOccurrenceId ? <p className="linked-edit-help">{t('transactions.linkedEditHelp')}</p> : null}
+        {!data.openingBalance && !editing?.paymentOccurrenceId ? (
+          <div className="composer-opening-required" role="alert">
+            <span>{t('transactions.openingRequired')}</span>
+            <Link to="/">{t('dashboard.nav')}</Link>
+          </div>
+        ) : null}
+        <form className="transaction-composer" onSubmit={submit}>
+          <div className="transaction-type-toggle" role="group" aria-label={t('transaction.type')}>
+            <button
+              type="button"
+              className={`transaction-type-option${type === 'income' ? ' is-selected is-income' : ''}`}
+              aria-pressed={type === 'income'}
+              onClick={() => { setType('income'); setCategoryId(''); }}
+            >
+              <ArrowDown size={19} aria-hidden="true" />{t('transaction.income')}
+            </button>
+            <button
+              type="button"
+              className={`transaction-type-option${type === 'expense' ? ' is-selected is-expense' : ''}`}
+              aria-pressed={type === 'expense'}
+              onClick={() => { setType('expense'); setCategoryId(''); }}
+            >
+              <ArrowUp size={19} aria-hidden="true" />{t('transaction.expense')}
+            </button>
+          </div>
+
+          <label className={`composer-amount-field${type === 'income' ? ' amount-income' : ' amount-expense'}${amountLength > 8 ? ' composer-amount-extra-long' : amountLength > 5 ? ' composer-amount-long' : ''}`}>
+            <span className="sr-only">{t('transaction.amount')}</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+              required
+            />
+            <span className="composer-currency">MMK</span>
+          </label>
+
+          <div className={`composer-primary-fields${cashStatus === 'pending' ? ' composer-fields-pending' : ''}`}>
+            <label className="composer-field">
+              <span><CalendarDays size={16} aria-hidden="true" />{t('transaction.date')}</span>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            </label>
+            {cashStatus === 'pending' ? (
+              <label className="composer-field composer-due-date">
+                <span><CalendarClock size={16} aria-hidden="true" />{t('transaction.dueDate')}</span>
+                <input type="date" min={date} value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
+              </label>
+            ) : null}
+            <fieldset className="composer-field composer-status-field">
+              <legend>{t('transaction.status')}</legend>
+              <div className="composer-status-toggle">
+                <button type="button" aria-pressed={cashStatus === 'settled'} className={cashStatus === 'settled' ? 'is-selected' : ''} onClick={() => setCashStatus('settled')}>
+                  {t('transaction.settled')}
+                </button>
+                <button type="button" aria-pressed={cashStatus === 'pending'} className={cashStatus === 'pending' ? 'is-selected' : ''} onClick={() => setCashStatus('pending')}>
+                  {t('transaction.pending')}
+                </button>
+              </div>
+            </fieldset>
+          </div>
+
+          {editing?.paymentOccurrenceId && cashStatus === 'settled' ? (
+            <label className="composer-field composer-confirmation">
+              <span>{t('transaction.confirmation')}</span>
+              <select
+                value={confirmationStatus === 'not_applicable' ? 'unconfirmed' : confirmationStatus}
+                onChange={(e) => setConfirmationStatus(e.target.value as 'unconfirmed' | 'confirmed')}
+              >
+                <option value="unconfirmed">{t('transaction.unconfirmed')}</option>
+                <option value="confirmed">{t('transaction.confirmed')}</option>
+              </select>
+            </label>
+          ) : null}
+
+          {showOpeningChoice ? (
+            <fieldset className="opening-day-choice">
+              <legend className="sr-only">{t('transactions.openingDayPrompt')}</legend>
+              <p className="opening-day-question">{t('transactions.openingDayPrompt')}</p>
+              <label>
+                <input type="radio" name="opening-day" value="already_in_opening" checked={openingDayDisposition === 'already_in_opening'} onChange={(e) => setOpeningDayDisposition(e.target.value)} />
+                {t('transactions.alreadyIncluded')}
+              </label>
+              <label>
+                <input type="radio" name="opening-day" value="after_reference" checked={openingDayDisposition === 'after_reference'} onChange={(e) => setOpeningDayDisposition(e.target.value)} />
+                {t('transactions.afterReference')}
+              </label>
+            </fieldset>
+          ) : null}
+
+          <fieldset className="composer-category-section">
+            <legend>{t('transaction.category')}</legend>
+            <div className="composer-category-list">
+              <button type="button" aria-pressed={!categoryId} className={!categoryId ? 'is-selected' : ''} onClick={() => setCategoryId('')}>
+                {t('transaction.uncategorized')}
+              </button>
+              {categories.map((item) => (
+                <button key={item.id} type="button" aria-pressed={categoryId === item.id} className={categoryId === item.id ? 'is-selected' : ''} onClick={() => setCategoryId(item.id)}>
+                  {t(`category.${item.id}`)}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <label className="composer-note-field">
+            <span className="sr-only">{t('transaction.description')}</span>
+            <input maxLength={200} placeholder={t('transaction.addNote')} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
+          <CategorySuggestion description={description} type={type} categories={categories} selectedCategoryId={categoryId} onApply={setCategoryId} />
+
+          {error ? <p role="alert" className="composer-error">{error}</p> : null}
+          <div className="composer-footer">
+            <button disabled={!data.openingBalance && !editing?.paymentOccurrenceId} className="composer-submit">
+              {editing ? t('transactions.saveCorrection') : t('transactions.save')}
+            </button>
+          </div>
+        </form>
+      </section>
+    );
+  }
+
   return (
     <>
       <header className="page-heading">
         <h1 tabIndex={-1}>{t('transactions.title')}</h1>
       </header>
-      <div className="activity-actions">
-        <button className="action-button" type="button" aria-expanded={formOpen} aria-controls="transaction-form" onClick={() => setFormOpen(!formOpen)}>
-          <Plus size={18} aria-hidden="true" />{t('transactions.add')}
-        </button>
-        <Link className="secondary-action" to="/capture"><ReceiptText size={18} aria-hidden="true" />{t('capture.nav')}</Link>
-      </div>
-      {!data.openingBalance && !editing?.paymentOccurrenceId ? (
+      {!data.openingBalance ? (
         <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
           {t('transactions.openingRequired')}{' '}
-          <Link className="font-semibold underline" to="/settings">
-            {t('settings.nav')}
-          </Link>
+          <Link className="font-semibold underline" to="/">{t('dashboard.nav')}</Link>
         </p>
       ) : null}
-      <section
-        id="transaction-form"
-        hidden={!formOpen}
-        className="surface-card transaction-form-panel"
-      >
-        <h2 className="text-xl font-semibold">
-          {editing ? t('transactions.edit') : t('transactions.add')}
-        </h2>
-        {editing?.paymentOccurrenceId ? <p className="linked-edit-help">{t('transactions.linkedEditHelp')}</p> : null}
-        <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-          <label className="grid gap-2 text-sm font-medium">
-            {t('transaction.type')}
-            <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
-              value={type}
-              onChange={(e) => {
-                setType(e.target.value as 'income' | 'expense');
-                setCategoryId('');
-              }}
-            >
-              <option value="expense">{t('transaction.expense')}</option>
-              <option value="income">{t('transaction.income')}</option>
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            {t('transaction.amount')}
-            <input
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-              type="number"
-              min="1"
-              step="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            {t('transaction.date')}
-            <input
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            {t('transaction.status')}
-            <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
-              value={cashStatus}
-              onChange={(e) =>
-                setCashStatus(e.target.value as 'settled' | 'pending')
-              }
-            >
-              <option value="settled">{t('transaction.settled')}</option>
-              <option value="pending">{t('transaction.pending')}</option>
-            </select>
-          </label>
-          {editing?.paymentOccurrenceId && cashStatus === 'settled' ? (
-            <label className="grid gap-2 text-sm font-medium">
-              {t('transaction.confirmation')}
-              <select
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
-                value={
-                  confirmationStatus === 'not_applicable'
-                    ? 'unconfirmed'
-                    : confirmationStatus
-                }
-                onChange={(e) =>
-                  setConfirmationStatus(
-                    e.target.value as 'unconfirmed' | 'confirmed',
-                  )
-                }
-              >
-                <option value="unconfirmed">
-                  {t('transaction.unconfirmed')}
-                </option>
-                <option value="confirmed">{t('transaction.confirmed')}</option>
-              </select>
-            </label>
-          ) : null}
-          {cashStatus === 'pending' ? (
-            <label className="grid gap-2 text-sm font-medium">
-              {t('transaction.dueDate')}
-              <input
-                className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-                type="date"
-                min={date}
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                required
-              />
-            </label>
-          ) : null}
-          <label className="grid gap-2 text-sm font-medium">
-            {t('transaction.category')}
-            <select
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <option value="">{t('transaction.uncategorized')}</option>
-              {categories.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {t(`category.${item.id}`)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="sm:col-span-2">
-            <CategorySuggestion
-              description={description}
-              type={type}
-              categories={categories}
-              selectedCategoryId={categoryId}
-              onApply={setCategoryId}
-            />
-          </div>
-          <label className="grid gap-2 text-sm font-medium sm:col-span-2">
-            {t('transaction.description')}
-            <input
-              className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-              maxLength={200}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
-          {showOpeningChoice ? (
-            <fieldset className="grid gap-2 sm:col-span-2">
-              <legend className="text-sm font-semibold">
-                {t('transactions.openingDayPrompt')}
-              </legend>
-              <label className="flex min-h-11 items-center gap-2">
-                <input
-                  type="radio"
-                  name="opening-day"
-                  value="already_in_opening"
-                  checked={openingDayDisposition === 'already_in_opening'}
-                  onChange={(e) => setOpeningDayDisposition(e.target.value)}
-                />
-                {t('transactions.alreadyIncluded')}
-              </label>
-              <label className="flex min-h-11 items-center gap-2">
-                <input
-                  type="radio"
-                  name="opening-day"
-                  value="after_reference"
-                  checked={openingDayDisposition === 'after_reference'}
-                  onChange={(e) => setOpeningDayDisposition(e.target.value)}
-                />
-                {t('transactions.afterReference')}
-              </label>
-            </fieldset>
-          ) : null}
-          {error ? (
-            <p role="alert" className="text-sm text-red-800 sm:col-span-2">
-              {error}
-            </p>
-          ) : null}
-          <div className="flex gap-3 sm:col-span-2">
-            <button
-              disabled={!data.openingBalance && !editing?.paymentOccurrenceId}
-              className="min-h-12 rounded-xl bg-accent px-5 font-semibold text-white disabled:opacity-50"
-            >
-              {editing
-                ? t('transactions.saveCorrection')
-                : t('transactions.save')}
-            </button>
-            {editing ? (
-              <button
-                type="button"
-                className="min-h-12 rounded-xl border px-4"
-                onClick={reset}
-              >
-                {t('form.cancel')}
-              </button>
-            ) : null}
-          </div>
-        </form>
-      </section>
       <section className="surface-card activity-list-panel">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="grid flex-1 gap-1 text-sm font-medium">
-            {t('transactions.search')}
-            <input
-              className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+        <div className="activity-filter-bar" role="group" aria-label={t('transactions.filter')}>
+          <label className="activity-period-filter">
+            <CalendarDays size={17} aria-hidden="true" />
+            <span className="sr-only">{t('transactions.dateRange')}</span>
+            <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as 'all' | 'month' | 'custom')}>
+              <option value="all">{t('transactions.allDates')}</option>
+              <option value="month">{t('transactions.specificMonth')}</option>
+              <option value="custom">{t('transactions.customRange')}</option>
+            </select>
           </label>
-          <label className="grid gap-1 text-sm font-medium">
-            {t('transactions.filter')}
-            <select
-              className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
+          {dateFilter === 'month' ? <label className="activity-date-input"><span className="sr-only">{t('transactions.specificMonth')}</span><input type="month" value={filterMonth} onChange={(event) => setFilterMonth(event.target.value)} /></label> : null}
+          {dateFilter === 'custom' ? (
+            <div className="activity-custom-range">
+              <label><span className="sr-only">{t('transactions.fromDate')}</span><input type="date" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} /></label>
+              <span aria-hidden="true">–</span>
+              <label><span className="sr-only">{t('transactions.toDate')}</span><input type="date" min={rangeStart || undefined} value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} /></label>
+            </div>
+          ) : null}
+          <label className="activity-type-filter">
+            <span className="sr-only">{t('transactions.filter')}</span>
+            <select value={filter} onChange={(event) => setFilter(event.target.value)}>
               <option value="all">{t('transactions.all')}</option>
               <option value="income">{t('transaction.income')}</option>
               <option value="expense">{t('transaction.expense')}</option>
@@ -1348,35 +1454,44 @@ export function TransactionsPage() {
           </div>
         ) : null}
         {filtered.length ? (
-          <ul className="mt-4 divide-y divide-[#e4e9e2]">
+          <ul className="activity-record-list">
             {filtered.map((item) => (
-              <li
-                key={item.id}
-                className="flex flex-wrap items-center justify-between gap-3 py-4"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold">
-                    {item.description ||
-                      t(`category.${item.categoryId ?? 'uncategorized'}`)}
+              <li key={item.id} className="activity-record-item">
+                <span className="activity-category-icon" aria-hidden="true">
+                  <ActivityCategoryIcon categoryId={item.categoryId} />
+                </span>
+                <div className="activity-record-copy">
+                  <p className="activity-category-name">
+                    {t(`category.${item.categoryId ?? 'uncategorized'}`)}
                   </p>
-                  <p className="mt-1 text-sm text-muted">
-                    {item.date} · {t(`transaction.${item.type}`)} ·{' '}
-                    {t(`transaction.${item.cashStatus}`)}
-                    {item.dueDate
-                      ? ` · ${t('transaction.dueDate')}: ${item.dueDate}`
-                      : ''}
-                  </p>
-                  <p className="text-sm text-muted">{money(item.amount)} MMK</p>
+                  <div className="activity-record-meta">
+                    <time dateTime={item.date}>{item.date}</time>
+                    <ActivityStatusIcon
+                      status={item.cashStatus}
+                      label={t(`transaction.${item.cashStatus}`)}
+                    />
+                    {item.dueDate ? (
+                      <span className="activity-record-due">
+                        {t('transaction.dueDate')}: {item.dueDate}
+                      </span>
+                    ) : null}
+                  </div>
+                  {item.description ? (
+                    <p className="activity-record-description">{item.description}</p>
+                  ) : null}
                 </div>
-                <div className="flex gap-2">
+                <div className="activity-record-actions">
+                  <strong className={`activity-record-amount activity-record-amount-${item.type}`}>
+                    {item.type === 'income' ? '+' : '−'}{money(item.amount)} <small>MMK</small>
+                  </strong>
                   <button
-                    className="min-h-11 rounded-lg border px-3 text-sm font-medium"
+                    className="activity-edit-button"
                     onClick={() => edit(item)}
                   >
                     {t('form.edit')}
                   </button>
                   <button
-                    className="min-h-11 rounded-lg border px-3 text-sm font-medium text-red-800"
+                    className="activity-delete-button"
                     onClick={() => {
                       if (window.confirm(t('transactions.confirmDelete'))) {
                         try {
