@@ -18,9 +18,6 @@ export function ReadinessPage() {
   return (
     <>
       <section className="mb-7">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('readiness.title')}
         </h1>

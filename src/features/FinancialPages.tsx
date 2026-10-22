@@ -7,6 +7,19 @@ import {
 } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  ChevronRight,
+  CalendarClock,
+  CircleAlert,
+  Plus,
+  ReceiptText,
+  TrendingDown,
+  TrendingUp,
+  WalletCards,
+} from 'lucide-react';
 import { CategorySuggestion } from '../components/CategorySuggestion';
 import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
 import {
@@ -14,6 +27,7 @@ import {
   summarizeMonthlyMovement,
   summarizeOutstanding,
   summarizePeriod,
+  buildCashFlowForecast,
   type ReportingPeriod,
 } from '../domain/reporting';
 import { BUSINESS_TIME_ZONE, type Transaction } from '../domain/types';
@@ -80,207 +94,313 @@ export function DashboardPage() {
     () => summarizeOutstanding(data, today),
     [data, today],
   );
+  const forecast = useMemo(
+    () => buildCashFlowForecast(data, today),
+    [data, today],
+  );
   const unconfirmedCount = data.paymentOccurrences.filter(
     (occurrence) => occurrence.status === 'assumed_unconfirmed',
   ).length;
   return (
-    <>
-      <section className="mb-8 max-w-3xl">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
-        <h1
-          tabIndex={-1}
-          className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl"
+    <div className="dashboard-page">
+      <section className="dashboard-heading">
+        <div>
+          <p className="eyebrow">{t('dashboard.overview')}</p>
+          <h1 tabIndex={-1}>{t('dashboard.nav')}</h1>
+          <p className="dashboard-intro">{t('dashboard.description')}</p>
+        </div>
+        <Link
+          className="pill-button pill-button-primary dashboard-add-button"
+          to="/transactions#transaction-form"
         >
-          {t('dashboard.title')}
-        </h1>
-        <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">
-          {t('dashboard.description')}
-        </p>
+          <Plus size={18} aria-hidden="true" />
+          {t('transactions.add')}
+        </Link>
       </section>
-      {!data.openingBalance ? (
-        <section className="mb-6 rounded-3xl border border-[#cdddcf] bg-white p-6 sm:p-8">
-          <h2 className="text-xl font-semibold">{t('opening.title')}</h2>
-          <p className="mt-2 max-w-2xl text-muted">{t('opening.intro')}</p>
-          <div className="mt-5">
-            <OpeningBalanceForm />
+
+      <section
+        className="balance-card surface-card"
+        aria-label={t('balance.available')}
+      >
+        <div className="balance-card-top">
+          <div className="balance-card-label">
+            <span className="icon-circle icon-circle-blue">
+              <WalletCards size={20} />
+            </span>
+            <div>
+              <p className="card-kicker">{t('balance.available')}</p>
+              <p className="balance-caption">{t('balance.allTime')}</p>
+            </div>
           </div>
-        </section>
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <article className="rounded-3xl bg-ink p-6 text-white sm:p-8">
-              <p className="text-sm text-white/75">{t('balance.available')}</p>
-              <p className="mt-3 text-3xl font-semibold">
-                {money(result.amount)}{' '}
-                <span className="text-base font-medium">MMK</span>
-              </p>
-              <p className="mt-3 text-sm text-white/75">
-                {t('balance.asOf', {
-                  date: businessDate(data.openingBalance.referenceAt),
-                })}
-              </p>
-            </article>
+          <span className="recorded-badge">{t('dashboard.calculated')}</span>
+        </div>
+        {!data.openingBalance ? (
+          <div className="balance-empty-state">
+            <p className="balance-amount balance-amount-empty">
+              {t('dashboard.balanceSetup')}
+            </p>
+            <div className="opening-form-wrap">
+              <h2>{t('opening.title')}</h2>
+              <OpeningBalanceForm />
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="balance-amount">
+              {money(result.amount)} <span>MMK</span>
+            </p>
+            <p className="balance-asof">
+              {t('balance.asOf', {
+                date: businessDate(data.openingBalance.referenceAt),
+              })}
+            </p>
+            <div className="balance-actions">
+              <Link
+                className="pill-button pill-button-primary"
+                to="/transactions#transaction-form"
+              >
+                <Plus size={17} />
+                {t('transactions.add')}
+              </Link>
+              <Link className="pill-button pill-button-outline" to="/capture">
+                <ReceiptText size={17} />
+                {t('capture.nav')}
+              </Link>
+              <Link
+                className="pill-button pill-button-outline balance-more-link"
+                to="/settings"
+              >
+                {t('settings.nav')}
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </>
+        )}
+      </section>
+
+      {result.unclassifiedOpeningDayIds.length ? (
+        <div className="attention-card" role="status">
+          <CircleAlert size={20} aria-hidden="true" />
+          <p>
+            {t('balance.reviewOpeningDay', {
+              count: result.unclassifiedOpeningDayIds.length,
+            })}
+          </p>
+          <Link to="/transactions">
+            {t('transactions.nav')}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      ) : null}
+      {unconfirmedCount > 0 ? (
+        <div className="attention-card attention-card-amber" role="status">
+          <CircleAlert size={20} aria-hidden="true" />
+          <p>
+            {t('balance.unconfirmedDisclosure', { count: unconfirmedCount })}
+          </p>
+          <Link to="/owed">
+            {t('owed.nav')}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      ) : null}
+
+      <section className="summary-grid" aria-label={t('dashboard.outstanding')}>
+        <Link to="/owed" className="summary-card surface-card">
+          <div className="summary-card-icon summary-icon-positive">
+            <ArrowDownRight size={19} />
+          </div>
+          <div className="summary-card-heading">
+            <span>{t('owed.receivableTotal')}</span>
+            <ArrowRight size={16} />
+          </div>
+          <p className="summary-amount">
+            {money(outstanding.receivableTotal)} <small>MMK</small>
+          </p>
+          <span className="summary-note">
+            {outstanding.receivables.length}{' '}
+            {t('owed.receivables').toLowerCase()}
+          </span>
+        </Link>
+        <Link to="/owed" className="summary-card surface-card">
+          <div className="summary-card-icon summary-icon-negative">
+            <ArrowUpRight size={19} />
+          </div>
+          <div className="summary-card-heading">
+            <span>{t('owed.payableTotal')}</span>
+            <ArrowRight size={16} />
+          </div>
+          <p className="summary-amount">
+            {money(outstanding.payableTotal)} <small>MMK</small>
+          </p>
+          <span className="summary-note">
+            {outstanding.payables.length} {t('owed.payables').toLowerCase()}
+          </span>
+        </Link>
+        <Link
+          to="/insights"
+          className={`summary-card surface-card${forecast.base.shortfall || forecast.lateInflows.shortfall ? ' summary-card-alert' : ''}`}
+        >
+          <div className="summary-card-icon summary-icon-forecast">
+            <CalendarClock size={19} />
+          </div>
+          <div className="summary-card-heading">
+            <span>{t('forecast.dailyTitle')}</span>
+            <ArrowRight size={16} />
+          </div>
+          <p className="summary-amount">
+            {money(forecast.lateInflows.minimumBalance)} <small>MMK</small>
+          </p>
+          <span className="summary-note">
+            {forecast.lateInflows.shortfall
+              ? t('forecast.shortfall', {
+                  amount: money(forecast.lateInflows.shortfall),
+                })
+              : t('forecast.lowPoint')}
+          </span>
+        </Link>
+      </section>
+
+      {(forecast.base.shortfall > 0 || forecast.lateInflows.shortfall > 0) && (
+        <Link className="forecast-warning" to="/insights">
+          <span className="warning-icon">
+            <CircleAlert size={20} />
+          </span>
+          <span className="warning-copy">
+            <strong>
+              {t('forecast.shortfall', {
+                amount: money(
+                  Math.max(
+                    forecast.base.shortfall,
+                    forecast.lateInflows.shortfall,
+                  ),
+                ),
+              })}
+            </strong>
+            <small>{t('forecast.disclaimer')}</small>
+          </span>
+          <ArrowRight className="warning-arrow" size={18} />
+        </Link>
+      )}
+
+      <section className="recent-card surface-card">
+        <div className="section-heading-row">
+          <div>
+            <p className="eyebrow">{t('dashboard.recentHelp')}</p>
+            <h2>{t('dashboard.recent')}</h2>
+          </div>
+          <Link className="text-link" to="/transactions">
+            {t('transactions.open')}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+        {data.transactions.length ? (
+          <ul className="transaction-list">
+            {[...data.transactions]
+              .sort((a, b) => b.date.localeCompare(a.date))
+              .slice(0, 5)
+              .map((item) => (
+                <li key={item.id}>
+                  <span
+                    className={`transaction-type-icon ${item.type === 'income' ? 'transaction-income' : 'transaction-expense'}`}
+                  >
+                    {item.type === 'income' ? (
+                      <TrendingUp size={18} />
+                    ) : (
+                      <TrendingDown size={18} />
+                    )}
+                  </span>
+                  <div className="transaction-description">
+                    <p>
+                      {item.description ||
+                        t(`category.${item.categoryId ?? 'uncategorized'}`)}
+                    </p>
+                    <span>
+                      {item.date} · {t(`transaction.${item.type}`)} ·{' '}
+                      {t(`transaction.${item.cashStatus}`)}
+                    </span>
+                  </div>
+                  <strong
+                    className={
+                      item.type === 'income' ? 'transaction-amount-income' : ''
+                    }
+                  >
+                    {item.type === 'expense' ? '−' : '+'}
+                    {money(item.amount)} <small>MMK</small>
+                  </strong>
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <div className="empty-transactions">
+            <span>
+              <ReceiptText size={22} />
+            </span>
+            <p>{t('dashboard.empty')}</p>
             <Link
-              to="/owed"
-              className="rounded-3xl border border-[#dce4dc] bg-white p-6 transition hover:border-accent sm:p-8"
+              className="pill-button pill-button-primary"
+              to="/transactions#transaction-form"
             >
-              <p className="text-sm text-muted">{t('dashboard.outstanding')}</p>
-              <p className="mt-3 text-xl font-semibold">
-                <span className="text-accent">
-                  {money(outstanding.receivableTotal)}
-                </span>
-                {' / '}
-                {money(outstanding.payableTotal)} MMK
-              </p>
-              <p className="mt-3 text-sm text-muted">
-                {t('dashboard.outstandingHelp')}
-              </p>
+              <Plus size={17} />
+              {t('transactions.add')}
             </Link>
           </div>
-          <section className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  {t('dashboard.periodSummary')}
-                </h2>
-                <p className="mt-1 text-sm text-muted">
-                  {range.startDate} – {range.endDate}
-                </p>
-              </div>
-              <label className="grid gap-1 text-sm font-medium">
-                {t('dashboard.reportingPeriod')}
-                <select
-                  className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
-                  value={period}
-                  onChange={(event) =>
-                    setPeriod(event.target.value as ReportingPeriod)
-                  }
-                >
-                  <option value="this_month">{t('dashboard.thisMonth')}</option>
-                  <option value="last_month">{t('dashboard.lastMonth')}</option>
-                  <option value="last_30_days">
-                    {t('dashboard.last30Days')}
-                  </option>
-                </select>
-              </label>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <MetricCard
-                label={t('dashboard.periodIncome')}
-                value={summary.income}
-              />
-              <MetricCard
-                label={t('dashboard.periodExpenses')}
-                value={summary.expenses}
-              />
-              <MetricCard
-                label={t('balance.netMovement')}
-                value={summary.net}
-              />
-            </div>
-            <p className="mt-3 text-sm text-muted">
-              {t('dashboard.settledOnly', { count: summary.transactionCount })}
+        )}
+      </section>
+
+      <details className="movement-details surface-card">
+        <summary>
+          <span>
+            <span className="summary-card-icon summary-icon-forecast">
+              <TrendingUp size={19} />
+            </span>
+            <span>
+              <strong>{t('dashboard.periodSummary')}</strong>
+              <small>{t('dashboard.monthlyChartHelp')}</small>
+            </span>
+          </span>
+          <ChevronRight size={19} />
+        </summary>
+        <div className="movement-content">
+          <div className="movement-toolbar">
+            <p>
+              {range.startDate} – {range.endDate}
             </p>
-          </section>
-          <section className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
-            <h2 className="text-xl font-semibold">
-              {t('dashboard.monthlyChart')}
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              {t('dashboard.monthlyChartHelp')}
-            </p>
-            <MovementChart values={monthlyMovement} />
-          </section>
-          {result.unclassifiedOpeningDayIds.length ? (
-            <p
-              className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-950"
-              role="status"
-            >
-              {t('balance.reviewOpeningDay', {
-                count: result.unclassifiedOpeningDayIds.length,
-              })}{' '}
-              <Link className="font-semibold underline" to="/transactions">
-                {t('transactions.nav')}
-              </Link>
-            </p>
-          ) : null}
-          <section className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-6 sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  {t('dashboard.recent')}
-                </h2>
-                <p className="mt-1 text-sm text-muted">
-                  {t('dashboard.recentHelp')}
-                </p>
-              </div>
-              <Link
-                className="rounded-xl bg-accent px-4 py-3 font-semibold text-white"
-                to="/transactions"
+            <label>
+              {t('dashboard.reportingPeriod')}
+              <select
+                className="field-control"
+                value={period}
+                onChange={(event) =>
+                  setPeriod(event.target.value as ReportingPeriod)
+                }
               >
-                {t('transactions.open')}
-              </Link>
-            </div>
-            {data.transactions.length ? (
-              <ul className="mt-5 divide-y divide-[#e4e9e2]">
-                {[...data.transactions]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .slice(0, 5)
-                  .map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex justify-between gap-3 py-4"
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {item.description ||
-                            t(`category.${item.categoryId ?? 'uncategorized'}`)}
-                        </p>
-                        <p className="mt-1 text-sm text-muted">
-                          {item.date} · {t(`transaction.${item.type}`)} ·{' '}
-                          {t(`transaction.${item.cashStatus}`)}
-                        </p>
-                      </div>
-                      <strong
-                        className={item.type === 'income' ? 'text-accent' : ''}
-                      >
-                        {item.type === 'expense' ? '−' : '+'}
-                        {money(item.amount)} MMK
-                      </strong>
-                    </li>
-                  ))}
-              </ul>
-            ) : (
-              <p className="mt-5 text-muted">{t('dashboard.empty')}</p>
-            )}
-          </section>
-        </>
-      )}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <Link
-          className="rounded-2xl border border-[#dce4dc] bg-[#eef2e9] p-5 font-semibold"
-          to="/transactions"
-        >
-          {t('transactions.nav')} →
-        </Link>
-        <Link
-          className="rounded-2xl border border-[#dce4dc] bg-[#eef2e9] p-5 font-semibold"
-          to="/settings"
-        >
-          {t('settings.nav')} →
-        </Link>
-      </div>
-      {unconfirmedCount > 0 ? (
-        <p
-          className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-950"
-          role="status"
-        >
-          {t('balance.unconfirmedDisclosure', { count: unconfirmedCount })}
-        </p>
-      ) : null}
-    </>
+                <option value="this_month">{t('dashboard.thisMonth')}</option>
+                <option value="last_month">{t('dashboard.lastMonth')}</option>
+                <option value="last_30_days">
+                  {t('dashboard.last30Days')}
+                </option>
+              </select>
+            </label>
+          </div>
+          <div className="movement-metrics">
+            <MetricCard
+              label={t('dashboard.periodIncome')}
+              value={summary.income}
+            />
+            <MetricCard
+              label={t('dashboard.periodExpenses')}
+              value={summary.expenses}
+            />
+            <MetricCard label={t('balance.netMovement')} value={summary.net} />
+          </div>
+          <p className="movement-note">
+            {t('dashboard.settledOnly', { count: summary.transactionCount })}
+          </p>
+          <MovementChart values={monthlyMovement} />
+        </div>
+      </details>
+    </div>
   );
 }
 
@@ -450,9 +570,6 @@ export function SettingsPage() {
   return (
     <>
       <section className="mb-8">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('settings.title')}
         </h1>
@@ -551,9 +668,6 @@ export function SchedulesPage() {
   return (
     <>
       <section className="mb-7">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('schedules.title')}
         </h1>
@@ -950,9 +1064,6 @@ export function TransactionsPage() {
   return (
     <>
       <section className="mb-7">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('transactions.title')}
         </h1>

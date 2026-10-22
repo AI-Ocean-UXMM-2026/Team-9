@@ -8,9 +8,6 @@ export function Placeholder({ id }: { id: ScreenId }) {
   return (
     <>
       <section className="mb-9 max-w-3xl">
-        <p className="mb-4 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1
           tabIndex={-1}
           className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl"

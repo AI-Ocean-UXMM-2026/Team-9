@@ -17,20 +17,18 @@ for (const width of [360, 768, 1280]) {
       if (width < 1024)
         await page.getByRole('button', { name: 'Menu', exact: true }).click();
       const link = page
-        .getByRole('navigation')
+        .getByRole('navigation', { name: 'Main navigation' })
         .getByRole('link', { name, exact: true });
       await link.click();
       await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
       if (width < 1024)
         await page.getByRole('button', { name: 'Menu', exact: true }).click();
       await expect(
-        page.getByRole('navigation').getByRole('link', { name, exact: true }),
+        page
+          .getByRole('navigation', { name: 'Main navigation' })
+          .getByRole('link', { name, exact: true }),
       ).toHaveAttribute('aria-current', 'page');
-      await expect(
-        page.getByText(
-          'Demo mode: simulated data. Do not enter real financial information.',
-        ),
-      ).toBeVisible();
+      await expect(page.locator('.demo-badge')).toBeVisible();
       if (
         ![
           'Transactions',
@@ -61,7 +59,6 @@ for (const width of [360, 768, 1280]) {
     }
     await page.screenshot({
       path: `test-results/dashboard-${width}.png`,
-      fullPage: true,
     });
     await page.goto('/#/schedules');
     await page.reload();
@@ -101,6 +98,7 @@ test('M5 dashboard periods, outstanding screen and forecast are available', asyn
 }) => {
   await page.addInitScript(() => localStorage.clear());
   await page.goto('/');
+  await page.getByText('Cash movement by period').click();
   await page.getByLabel('Opening amount (MMK)').fill('470000');
   await page.getByRole('button', { name: 'Save opening balance' }).click();
   await expect(page.getByLabel('Reporting period')).toHaveValue('this_month');
@@ -133,6 +131,18 @@ test('M5 dashboard periods, outstanding screen and forecast are available', asyn
     page.getByText(/Estimated from your recorded available balance/),
   ).toBeVisible();
   await expect(page.getByRole('table').getByRole('row')).toHaveCount(15);
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expect(page.getByRole('table')).toBeHidden();
+  await expect(page.getByTestId('forecast-mobile-day')).toHaveCount(14);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page
+    .getByRole('heading', { name: '14-day daily forecast' })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/forecast-360.png' });
 });
 
 test('M6 remembers duplicate review and grounded chat cites local records', async ({
@@ -222,13 +232,37 @@ test('M6 remembers duplicate review and grounded chat cites local records', asyn
   await expect(page.getByText(/I can't predict loan approval/)).toBeVisible();
 });
 
+test('mobile chat composer stays above the bottom navigation', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/#/chat');
+  const composer = page.locator('.chat-composer');
+  const navigation = page.getByRole('navigation', {
+    name: 'Quick navigation',
+  });
+  await expect(composer).toBeVisible();
+  const composerBounds = await composer.boundingBox();
+  const navigationBounds = await navigation.boundingBox();
+  expect(composerBounds).not.toBeNull();
+  expect(navigationBounds).not.toBeNull();
+  expect(composerBounds!.y + composerBounds!.height).toBeLessThanOrEqual(
+    navigationBounds!.y,
+  );
+  await page.screenshot({ path: 'test-results/chat-mobile-390.png' });
+});
+
 test('opening balance and manual transaction workflow', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.getByLabel('Opening amount (MMK)').fill('100000');
   await page.getByRole('button', { name: 'Save opening balance' }).click();
-  await expect(page.getByText('100,000 MMK')).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Recorded available balance' })
+      .getByText('100,000 MMK'),
+  ).toBeVisible();
   await page.getByRole('link', { name: 'View transactions' }).click();
   await page.getByLabel('Type').selectOption('income');
   await page.getByLabel('Amount (MMK)').fill('2500');
@@ -244,6 +278,27 @@ test('opening balance and manual transaction workflow', async ({ page }) => {
   await page.getByLabel('Amount (MMK)').fill('3000');
   await page.getByRole('button', { name: 'Save correction' }).click();
   await expect(page.getByText('3,000 MMK')).toBeVisible();
+  const dashboardLink = page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Dashboard' });
+  await dashboardLink.click();
+  await expect(dashboardLink).toHaveAttribute('aria-current', 'page');
+  await expect(
+    page
+      .getByRole('region', { name: 'Recorded available balance' })
+      .getByText('103,000 MMK'),
+  ).toBeVisible();
+  await expect(page.getByText('Market sale')).toBeVisible();
+  await page.screenshot({ path: 'test-results/dashboard-with-records.png' });
+  await page.setViewportSize({ width: 360, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: 'test-results/dashboard-with-records-360.png',
+  });
 });
 
 test('M7 readiness checklist persists and category suggestions stay optional', async ({
@@ -291,9 +346,7 @@ test('malformed saved data recovers with a visible notice', async ({
   await expect(
     page.getByText('Saved demo data could not be read and has been reset.'),
   ).toBeVisible();
-  await expect(
-    page.getByRole('heading', { name: 'Your financial picture' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 });
 
 test('transaction descriptions render as text, not executable markup', async ({

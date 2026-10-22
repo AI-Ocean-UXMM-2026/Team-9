@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { SendHorizontal } from 'lucide-react';
 import {
   answerRecordedQuestion,
   buildRuleInsights,
@@ -47,9 +48,6 @@ export function OwedPage() {
   return (
     <>
       <section className="mb-7">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('owed.title')}
         </h1>
@@ -177,9 +175,6 @@ export function ForecastPage() {
   return (
     <>
       <section className="mb-7">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('insights.title')}
         </h1>
@@ -228,7 +223,7 @@ export function ForecastPage() {
                 {forecast.startDate} – {forecast.endDate}
               </p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b text-muted">
@@ -275,10 +270,48 @@ export function ForecastPage() {
                 </tbody>
               </table>
             </div>
+            <div className="grid gap-3 md:hidden">
+              {forecast.base.days.map((day, index) => (
+                <article
+                  key={day.date}
+                  data-testid="forecast-mobile-day"
+                  className="rounded-2xl bg-[#f5f8fc] p-4"
+                >
+                  <h3 className="font-semibold">{day.date}</h3>
+                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">
+                    <ForecastMetric
+                      label={t('forecast.inflows')}
+                      value={day.income ? `${money(day.income)} MMK` : '—'}
+                    />
+                    <ForecastMetric
+                      label={t('forecast.outflows')}
+                      value={day.expenses ? `${money(day.expenses)} MMK` : '—'}
+                    />
+                    <ForecastMetric
+                      label={t('forecast.baseBalance')}
+                      value={`${money(day.closingBalance)} MMK`}
+                    />
+                    <ForecastMetric
+                      label={t('forecast.lateBalance')}
+                      value={`${money(forecast.lateInflows.days[index]?.closingBalance ?? null)} MMK`}
+                    />
+                  </dl>
+                </article>
+              ))}
+            </div>
           </section>
         </>
       )}
     </>
+  );
+}
+
+function ForecastMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs leading-5 text-muted">{label}</dt>
+      <dd className="break-words text-sm font-medium tabular-nums">{value}</dd>
+    </div>
   );
 }
 
@@ -474,11 +507,8 @@ export function ChatPage() {
     setAnswer(answerRecordedQuestion(data, systemClock.today(), question));
   }
   return (
-    <>
+    <div className="chat-page">
       <section className="mb-7">
-        <p className="mb-3 text-xs font-bold tracking-[.18em] text-accent">
-          {t('prototype')}
-        </p>
         <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
           {t('chat.title')}
         </h1>
@@ -489,25 +519,6 @@ export function ChatPage() {
       <p className="mb-5 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
         {t('chat.limits')}
       </p>
-      <form
-        className="flex flex-col gap-3 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:flex-row sm:p-7"
-        onSubmit={submit}
-      >
-        <label className="grid flex-1 gap-2 text-sm font-medium">
-          {t('chat.questionLabel')}
-          <input
-            className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            maxLength={300}
-            placeholder={t('chat.questionPlaceholder')}
-            required
-          />
-        </label>
-        <button className="min-h-12 self-end rounded-xl bg-accent px-5 font-semibold text-white">
-          {t('chat.ask')}
-        </button>
-      </form>
       {answer ? (
         <section
           className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7"
@@ -540,7 +551,26 @@ export function ChatPage() {
           ) : null}
         </section>
       ) : null}
-    </>
+      <form className="chat-composer" onSubmit={submit}>
+        <label className="sr-only" htmlFor="chat-question">
+          {t('chat.questionLabel')}
+        </label>
+        <div className="chat-input-wrap">
+          <input
+            id="chat-question"
+            className="chat-input"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            maxLength={300}
+            placeholder={t('chat.questionPlaceholder')}
+            required
+          />
+        </div>
+        <button className="chat-send" aria-label={t('chat.ask')}>
+          <SendHorizontal size={20} aria-hidden="true" />
+        </button>
+      </form>
+    </div>
   );
 }
 
