@@ -1,4 +1,5 @@
 import {
+  Ellipsis,
   LayoutDashboard,
   ArrowLeftRight,
   ScanLine,
@@ -21,3 +22,17 @@ export const screens = [
   { id: 'settings', path: '/settings', icon: Settings },
 ] as const;
 export type ScreenId = (typeof screens)[number]['id'];
+
+export const primaryDestinations = [
+  { id: 'dashboard', path: '/', icon: LayoutDashboard },
+  { id: 'transactions', path: '/transactions', icon: ArrowLeftRight },
+  { id: 'payments', path: '/payments', icon: CalendarDays },
+  { id: 'insights', path: '/insights', icon: ChartNoAxesCombined },
+  { id: 'more', path: '/more', icon: Ellipsis },
+] as const;
+
+export const utilityDestinations = [
+  { id: 'chat', path: '/chat', icon: MessageCircle },
+  { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
+  { id: 'settings', path: '/settings', icon: Settings },
+] as const;

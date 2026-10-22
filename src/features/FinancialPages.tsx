@@ -5,7 +5,7 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowDownRight,
@@ -30,8 +30,9 @@ import {
   buildCashFlowForecast,
   type ReportingPeriod,
 } from '../domain/reporting';
-import { BUSINESS_TIME_ZONE, type Transaction } from '../domain/types';
-import { systemClock } from '../services/clock';
+import type { Transaction } from '../domain/types';
+import { clockForTimeZone, systemClock } from '../services/clock';
+import { dateInTimeZone, dateTimeInputInTimeZone, dateTimeInputToInstant } from '../services/timeZone';
 import { useDemoStore } from '../store/demoStore';
 
 const money = (amount: number | null) =>
@@ -43,9 +44,9 @@ const money = (amount: number | null) =>
 const uid = () =>
   globalThis.crypto?.randomUUID?.() ??
   `txn-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-function businessNowInput() {
+function businessNowInput(timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TIME_ZONE,
+    timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -57,24 +58,17 @@ function businessNowInput() {
     parts.find((part) => part.type === type)?.value ?? '00';
   return `${val('year')}-${val('month')}-${val('day')}T${val('hour')}:${val('minute')}`;
 }
-function rangoonInstant(value: string) {
-  return new Date(`${value}:00+06:30`).toISOString();
-}
-function businessDate(instant: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date(instant));
-  return `${parts.find((part) => part.type === 'year')?.value}-${parts.find((part) => part.type === 'month')?.value}-${parts.find((part) => part.type === 'day')?.value}`;
+function businessDate(instant: string, timeZone: string) {
+  return dateInTimeZone(instant, timeZone);
 }
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const data = useDemoStore((state) => state.data);
+  const timeZone = useDemoStore((state) => state.timeZone);
   const [period, setPeriod] = useState<ReportingPeriod>('this_month');
-  const today = systemClock.today();
+  const today = clockForTimeZone(timeZone).today();
   const range = getReportingRange(period, today);
   const { startDate, endDate } = range;
   const result = useMemo(
@@ -101,25 +95,31 @@ export function DashboardPage() {
   const unconfirmedCount = data.paymentOccurrences.filter(
     (occurrence) => occurrence.status === 'assumed_unconfirmed',
   ).length;
+  const upcomingItems = [
+    ...data.paymentOccurrences
+      .filter((occurrence) => occurrence.status === 'scheduled' && occurrence.originalDueDate >= today)
+      .flatMap((occurrence) => {
+        const rule = data.scheduleRules.find((item) => item.id === occurrence.ruleId);
+        return rule ? [{ id: occurrence.id, date: occurrence.originalDueDate, amount: rule.amount, description: rule.description || t(`category.${rule.categoryId ?? 'uncategorized'}`) }] : [];
+      }),
+    ...data.transactions
+      .filter((transaction) => transaction.cashStatus === 'pending' && transaction.dueDate && transaction.dueDate >= today)
+      .map((transaction) => ({ id: transaction.id, date: transaction.dueDate ?? transaction.date, amount: transaction.amount, description: transaction.description || t(`category.${transaction.categoryId ?? 'uncategorized'}`) })),
+  ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  useEffect(() => {
+    if (location.hash === '#opening-balance') {
+      window.requestAnimationFrame(() => document.getElementById('opening-balance')?.scrollIntoView({ block: 'start' }));
+    }
+  }, [location.hash]);
   return (
     <div className="dashboard-page">
-      <section className="dashboard-heading">
-        <div>
-          <p className="eyebrow">{t('dashboard.overview')}</p>
-          <h1 tabIndex={-1}>{t('dashboard.nav')}</h1>
-          <p className="dashboard-intro">{t('dashboard.description')}</p>
-        </div>
-        <Link
-          className="pill-button pill-button-primary dashboard-add-button"
-          to="/transactions#transaction-form"
-        >
-          <Plus size={18} aria-hidden="true" />
-          {t('transactions.add')}
-        </Link>
-      </section>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('dashboard.nav')}</h1>
+      </header>
 
       <section
         className="balance-card surface-card"
+        id="opening-balance"
         aria-label={t('balance.available')}
       >
         <div className="balance-card-top">
@@ -129,19 +129,14 @@ export function DashboardPage() {
             </span>
             <div>
               <p className="card-kicker">{t('balance.available')}</p>
-              <p className="balance-caption">{t('balance.allTime')}</p>
             </div>
           </div>
-          <span className="recorded-badge">{t('dashboard.calculated')}</span>
         </div>
         {!data.openingBalance ? (
           <div className="balance-empty-state">
-            <p className="balance-amount balance-amount-empty">
-              {t('dashboard.balanceSetup')}
-            </p>
             <div className="opening-form-wrap">
               <h2>{t('opening.title')}</h2>
-              <OpeningBalanceForm />
+              <OpeningBalanceForm key={timeZone} />
             </div>
           </div>
         ) : (
@@ -151,29 +146,12 @@ export function DashboardPage() {
             </p>
             <p className="balance-asof">
               {t('balance.asOf', {
-                date: businessDate(data.openingBalance.referenceAt),
+                date: businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone),
               })}
             </p>
-            <div className="balance-actions">
-              <Link
-                className="pill-button pill-button-primary"
-                to="/transactions#transaction-form"
-              >
-                <Plus size={17} />
-                {t('transactions.add')}
-              </Link>
-              <Link className="pill-button pill-button-outline" to="/capture">
-                <ReceiptText size={17} />
-                {t('capture.nav')}
-              </Link>
-              <Link
-                className="pill-button pill-button-outline balance-more-link"
-                to="/settings"
-              >
-                {t('settings.nav')}
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+            <Link className="balance-reference-link" to="/settings">
+              {t('settings.nav')} <ArrowRight size={15} />
+            </Link>
           </>
         )}
       </section>
@@ -198,15 +176,41 @@ export function DashboardPage() {
           <p>
             {t('balance.unconfirmedDisclosure', { count: unconfirmedCount })}
           </p>
-          <Link to="/owed">
-            {t('owed.nav')}
+          <Link to="/payments/upcoming">
+            {t('payments.nav')}
             <ArrowRight size={16} />
           </Link>
         </div>
       ) : null}
 
+      <section className="home-upcoming surface-card">
+        <div className="section-heading-row">
+          <div>
+            <h2>{t('dashboard.nextPayments')}</h2>
+          </div>
+          <Link className="text-link" to="/payments/upcoming">
+            {t('dashboard.allPayments')} <ArrowRight size={15} />
+          </Link>
+        </div>
+        {upcomingItems.length ? (
+          <ul className="upcoming-list">
+            {upcomingItems.map((item) => {
+              return (
+                <li key={item.id}>
+                  <span className="upcoming-date">{item.date}</span>
+                  <span className="upcoming-description">{item.description}</span>
+                  <strong>{money(item.amount)} <small>MMK</small></strong>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="home-upcoming-empty">{t('dashboard.noUpcoming')}</p>
+        )}
+      </section>
+
       <section className="summary-grid" aria-label={t('dashboard.outstanding')}>
-        <Link to="/owed" className="summary-card surface-card">
+        <Link to="/payments/owed" className="summary-card surface-card">
           <div className="summary-card-icon summary-icon-positive">
             <ArrowDownRight size={19} />
           </div>
@@ -217,12 +221,8 @@ export function DashboardPage() {
           <p className="summary-amount">
             {money(outstanding.receivableTotal)} <small>MMK</small>
           </p>
-          <span className="summary-note">
-            {outstanding.receivables.length}{' '}
-            {t('owed.receivables').toLowerCase()}
-          </span>
         </Link>
-        <Link to="/owed" className="summary-card surface-card">
+        <Link to="/payments/owed" className="summary-card surface-card">
           <div className="summary-card-icon summary-icon-negative">
             <ArrowUpRight size={19} />
           </div>
@@ -233,9 +233,6 @@ export function DashboardPage() {
           <p className="summary-amount">
             {money(outstanding.payableTotal)} <small>MMK</small>
           </p>
-          <span className="summary-note">
-            {outstanding.payables.length} {t('owed.payables').toLowerCase()}
-          </span>
         </Link>
         <Link
           to="/insights"
@@ -286,7 +283,6 @@ export function DashboardPage() {
       <section className="recent-card surface-card">
         <div className="section-heading-row">
           <div>
-            <p className="eyebrow">{t('dashboard.recentHelp')}</p>
             <h2>{t('dashboard.recent')}</h2>
           </div>
           <Link className="text-link" to="/transactions">
@@ -356,7 +352,6 @@ export function DashboardPage() {
             </span>
             <span>
               <strong>{t('dashboard.periodSummary')}</strong>
-              <small>{t('dashboard.monthlyChartHelp')}</small>
             </span>
           </span>
           <ChevronRight size={19} />
@@ -491,13 +486,14 @@ export function OpeningBalanceForm() {
   const { t } = useTranslation();
   const existing = useDemoStore((state) => state.data.openingBalance);
   const save = useDemoStore((state) => state.setOpeningBalance);
+  const timeZone = useDemoStore((state) => state.timeZone);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [amount, setAmount] = useState(String(existing?.amount ?? ''));
   const [referenceAt, setReferenceAt] = useState(
     existing
-      ? `${businessDate(existing.referenceAt)}T${new Intl.DateTimeFormat('en-GB', { timeZone: BUSINESS_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(existing.referenceAt))}`
-      : businessNowInput(),
+      ? dateTimeInputInTimeZone(existing.referenceAt, timeZone)
+      : businessNowInput(timeZone),
   );
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -507,44 +503,49 @@ export function OpeningBalanceForm() {
       setError(t('form.amountError'));
       return;
     }
-    if (
-      !referenceAt ||
-      new Date(rangoonInstant(referenceAt)) > systemClock.now()
-    ) {
+    let referenceInstant: string;
+    try {
+      referenceInstant = dateTimeInputToInstant(referenceAt, timeZone);
+    } catch {
+      setError(t('opening.invalidLocalTime'));
+      return;
+    }
+    if (!referenceAt || referenceInstant > systemClock.now().toISOString()) {
       setError(t('opening.futureError'));
       return;
     }
     save({
       amount: Number(amount),
-      referenceAt: rangoonInstant(referenceAt),
-      timeZone: BUSINESS_TIME_ZONE,
+      referenceAt: referenceInstant,
+      timeZone,
     });
     setSaved(true);
   }
   return (
-    <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-      <label className="grid gap-2 text-sm font-medium">
+    <form onSubmit={submit} className="opening-balance-form grid gap-4 sm:grid-cols-2">
+      <label className="opening-field grid gap-2 text-sm font-medium">
         {t('opening.amount')}
         <input
-          className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+          className="field-control min-h-12 rounded-xl border border-[#bccbc0] px-4"
           type="number"
           min="0"
           step="1"
+          placeholder={t('opening.amountPlaceholder')}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
         />
       </label>
-      <label className="grid gap-2 text-sm font-medium">
+      <label className="opening-field grid gap-2 text-sm font-medium">
         {t('opening.referenceAt')}
         <input
-          className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
+          className="field-control min-h-12 rounded-xl border border-[#bccbc0] px-4"
           type="datetime-local"
+          aria-label={t('opening.referenceAt')}
           value={referenceAt}
           onChange={(e) => setReferenceAt(e.target.value)}
           required
         />
-        <span className="font-normal text-muted">{t('opening.timezone')}</span>
       </label>
       {error ? (
         <p role="alert" className="text-sm text-red-800 sm:col-span-2">
@@ -567,20 +568,41 @@ export function OpeningBalanceForm() {
 
 export function SettingsPage() {
   const { t } = useTranslation();
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const setTimeZone = useDemoStore((state) => state.setTimeZone);
+  const intlWithZones = Intl as typeof Intl & {
+    supportedValuesOf?: (key: 'timeZone') => string[];
+  };
+  const availableTimeZones = [...new Set([
+    timeZone,
+    ...(intlWithZones.supportedValuesOf?.('timeZone') ?? []),
+  ])];
   return (
     <>
-      <section className="mb-8">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('settings.title')}
-        </h1>
-        <p className="mt-4 text-lg text-muted">{t('settings.description')}</p>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('settings.title')}</h1>
+      </header>
+      <section className="surface-card settings-panel">
+        <label className="grid max-w-xl gap-2 text-sm font-medium">
+          {t('settings.timeZone')}
+          <select
+            className="field-control"
+            value={timeZone}
+            onChange={(event) => {
+              setTimeZone(event.target.value);
+              useDemoStore.getState().processDueSchedules();
+            }}
+          >
+            {availableTimeZones.map((zone) => (
+              <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>
+            ))}
+          </select>
+        </label>
       </section>
-      <section className="rounded-3xl border border-[#dce4dc] bg-white p-6 sm:p-8">
-        <h2 className="mb-2 text-xl font-semibold">{t('opening.title')}</h2>
-        <p className="mb-5 text-sm text-muted">{t('opening.intro')}</p>
-        <OpeningBalanceForm />
+      <section className="surface-card settings-panel">
+        <h2 className="mb-5 text-xl font-semibold">{t('opening.title')}</h2>
+        <OpeningBalanceForm key={timeZone} />
       </section>
-      <p className="mt-5 text-sm text-muted">{t('settings.carryForward')}</p>
     </>
   );
 }
@@ -588,20 +610,23 @@ export function SettingsPage() {
 export function SchedulesPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
   const createSchedule = useDemoStore((state) => state.createScheduleRule);
   const cancelSchedule = useDemoStore((state) => state.cancelScheduleRule);
   const markUnpaid = useDemoStore((state) => state.markOccurrenceUnpaid);
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [repeat, setRepeat] = useState<'one_time' | 'monthly'>('one_time');
   const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState(systemClock.today());
+  const [dueDate, setDueDate] = useState(today);
   const [dayOfMonth, setDayOfMonth] = useState(
-    String(Number(systemClock.today().slice(-2))),
+    String(Number(today.slice(-2))),
   );
   const [endDate, setEndDate] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
   const categories = data.categories.filter(
     (category) => category.type === type || category.type === 'both',
   );
@@ -641,9 +666,10 @@ export function SchedulesPage() {
       setAmount('');
       setDescription('');
       setCategoryId('');
-      setDueDate(systemClock.today());
-      setDayOfMonth(String(Number(systemClock.today().slice(-2))));
+      setDueDate(today);
+      setDayOfMonth(String(Number(today.slice(-2))));
       setEndDate('');
+      setShowScheduleForm(false);
     } catch {
       setError(t('schedules.saveError'));
     }
@@ -667,15 +693,22 @@ export function SchedulesPage() {
   }, []);
   return (
     <>
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('schedules.title')}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          {t('schedules.description')}
-        </p>
-      </section>
-      <section className="rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('payments.title')}</h1>
+        <nav className="section-tabs" aria-label={t('payments.nav')}>
+          <Link className="section-tab section-tab-active" aria-current="page" to="/payments/upcoming">{t('payments.upcoming')}</Link>
+          <Link className="section-tab" to="/payments/owed">{t('payments.owed')}</Link>
+        </nav>
+      </header>
+      <div className="section-toolbar">
+        <div>
+          <h2>{t('schedules.list')}</h2>
+        </div>
+        <button className="action-button" type="button" aria-expanded={showScheduleForm} aria-controls="schedule-form-panel" onClick={() => setShowScheduleForm(!showScheduleForm)}>
+          <Plus size={18} aria-hidden="true" />{t('schedules.add')}
+        </button>
+      </div>
+      <section id="schedule-form-panel" className={`schedule-form-panel surface-card${showScheduleForm ? ' schedule-form-panel-open' : ''}`} hidden={!showScheduleForm}>
         <h2 className="text-xl font-semibold">{t('schedules.add')}</h2>
         <p className="mt-1 text-sm text-muted">{t('schedules.addHelp')}</p>
         <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
@@ -793,9 +826,8 @@ export function SchedulesPage() {
           </div>
         </form>
       </section>
-      <section className="mt-7 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+      <section className="surface-card schedule-list-panel">
         <h2 className="text-xl font-semibold">{t('schedules.list')}</h2>
-        <p className="mt-1 text-sm text-muted">{t('schedules.forecastHelp')}</p>
         {rows.length ? (
           <ul className="mt-4 divide-y divide-[#e4e9e2]">
             {rows.map(({ rule, occurrence }) => {
@@ -901,6 +933,8 @@ export function SchedulesPage() {
 export function TransactionsPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
   const save = useDemoStore((state) => state.saveTransaction);
   const remove = useDemoStore((state) => state.deleteTransaction);
   const restore = useDemoStore((state) => state.restoreTransaction);
@@ -910,9 +944,11 @@ export function TransactionsPage() {
   const [error, setError] = useState('');
   const [undo, setUndo] = useState<Transaction | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const [formOpen, setFormOpen] = useState(() => window.location.hash === '#transaction-form');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(systemClock.today());
+  const [date, setDate] = useState(today);
   const [dueDate, setDueDate] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -924,7 +960,7 @@ export function TransactionsPage() {
     'not_applicable' | 'unconfirmed' | 'confirmed'
   >('not_applicable');
   const openingDay = data.openingBalance
-    ? businessDate(data.openingBalance.referenceAt)
+    ? businessDate(data.openingBalance.referenceAt, data.openingBalance.timeZone)
     : '';
   const showOpeningChoice = Boolean(
     data.openingBalance && date === openingDay && !editing?.occurredAt,
@@ -932,6 +968,12 @@ export function TransactionsPage() {
   const categories = data.categories.filter(
     (category) => category.type === type || category.type === 'both',
   );
+  useEffect(() => {
+    if (location.hash === '#transaction-form') {
+      setFormOpen(true);
+      window.requestAnimationFrame(() => document.getElementById('transaction-form')?.scrollIntoView({ block: 'start' }));
+    }
+  }, [location.hash]);
   const filtered = data.transactions
     .filter(
       (item) =>
@@ -947,7 +989,7 @@ export function TransactionsPage() {
     setEditing(null);
     setType('expense');
     setAmount('');
-    setDate(systemClock.today());
+    setDate(today);
     setDueDate('');
     setDescription('');
     setCategoryId('');
@@ -955,9 +997,11 @@ export function TransactionsPage() {
     setOpeningDayDisposition('');
     setConfirmationStatus('not_applicable');
     setError('');
+    setFormOpen(false);
   }
   const edit = useCallback(
     (item: Transaction) => {
+      setFormOpen(true);
       setEditing(item);
       setType(item.type);
       setAmount(String(item.amount));
@@ -977,9 +1021,9 @@ export function TransactionsPage() {
       setOpeningDayDisposition(item.openingDayDisposition ?? '');
       setConfirmationStatus(item.confirmationStatus);
       setError('');
-      document
-        .getElementById('transaction-form')
-        ?.scrollIntoView({ behavior: 'smooth' });
+      window.requestAnimationFrame(() =>
+        document.getElementById('transaction-form')?.scrollIntoView({ block: 'start' }),
+      );
     },
     [data.paymentOccurrences],
   );
@@ -1012,7 +1056,7 @@ export function TransactionsPage() {
       setError(t('form.amountError'));
       return;
     }
-    if (cashStatus === 'settled' && date > systemClock.today()) {
+    if (cashStatus === 'settled' && date > today) {
       setError(t('transactions.futureSettled'));
       return;
     }
@@ -1063,14 +1107,15 @@ export function TransactionsPage() {
   }
   return (
     <>
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('transactions.title')}
-        </h1>
-        <p className="mt-4 text-lg text-muted">
-          {t('transactions.description')}
-        </p>
-      </section>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('transactions.title')}</h1>
+      </header>
+      <div className="activity-actions">
+        <button className="action-button" type="button" aria-expanded={formOpen} aria-controls="transaction-form" onClick={() => setFormOpen(!formOpen)}>
+          <Plus size={18} aria-hidden="true" />{t('transactions.add')}
+        </button>
+        <Link className="secondary-action" to="/capture"><ReceiptText size={18} aria-hidden="true" />{t('capture.nav')}</Link>
+      </div>
       {!data.openingBalance && !editing?.paymentOccurrenceId ? (
         <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
           {t('transactions.openingRequired')}{' '}
@@ -1081,12 +1126,13 @@ export function TransactionsPage() {
       ) : null}
       <section
         id="transaction-form"
-        className="scroll-mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7"
+        hidden={!formOpen}
+        className="surface-card transaction-form-panel"
       >
         <h2 className="text-xl font-semibold">
           {editing ? t('transactions.edit') : t('transactions.add')}
         </h2>
-        <p className="mt-1 text-sm text-muted">{t('transactions.editHelp')}</p>
+        {editing?.paymentOccurrenceId ? <p className="linked-edit-help">{t('transactions.linkedEditHelp')}</p> : null}
         <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.type')}
@@ -1259,7 +1305,7 @@ export function TransactionsPage() {
           </div>
         </form>
       </section>
-      <section className="mt-7 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
+      <section className="surface-card activity-list-panel">
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="grid flex-1 gap-1 text-sm font-medium">
             {t('transactions.search')}

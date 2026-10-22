@@ -1,6 +1,14 @@
 import { z } from 'zod';
 
 export const BUSINESS_TIME_ZONE = 'Asia/Rangoon' as const;
+export const isValidTimeZone = (timeZone: string) => {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+};
 export const MMK_MAX = 1_000_000_000_000;
 
 const idSchema = z.string().min(1).max(256);
@@ -11,7 +19,7 @@ const moneySchema = z.number().int().positive().max(MMK_MAX);
 export const openingBalanceSchema = z.object({
   amount: z.number().int().nonnegative().max(MMK_MAX),
   referenceAt: isoInstantSchema,
-  timeZone: z.literal(BUSINESS_TIME_ZONE),
+  timeZone: z.string().refine(isValidTimeZone, 'Choose a valid time zone.'),
 });
 export type OpeningBalance = z.infer<typeof openingBalanceSchema>;
 
@@ -438,6 +446,7 @@ export type AppData = z.infer<typeof appDataSchema>;
 export const persistedStoreSchema = z.object({
   data: appDataSchema,
   storageNotice: z.string().max(300).nullable(),
+  timeZone: z.string().refine(isValidTimeZone).default(BUSINESS_TIME_ZONE),
 });
 export type PersistedStore = z.infer<typeof persistedStoreSchema>;
 

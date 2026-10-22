@@ -13,7 +13,7 @@ import {
   buildCashFlowForecast,
   summarizeOutstanding,
 } from '../domain/reporting';
-import { systemClock } from '../services/clock';
+import { clockForTimeZone, systemClock } from '../services/clock';
 import { useDemoStore } from '../store/demoStore';
 import type { DuplicateReview } from '../domain/types';
 
@@ -44,17 +44,18 @@ function translationValues(
 export function OwedPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
-  const summary = summarizeOutstanding(data, systemClock.today());
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
+  const summary = summarizeOutstanding(data, today);
   return (
     <>
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('owed.title')}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          {t('owed.description')}
-        </p>
-      </section>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('payments.title')}</h1>
+        <nav className="section-tabs" aria-label={t('payments.nav')}>
+          <Link className="section-tab" to="/payments/upcoming">{t('payments.upcoming')}</Link>
+          <Link className="section-tab section-tab-active" aria-current="page" to="/payments/owed">{t('payments.owed')}</Link>
+        </nav>
+      </header>
       <div className="grid gap-4 sm:grid-cols-2">
         <SummaryCard
           title={t('owed.receivableTotal')}
@@ -171,19 +172,14 @@ function OutstandingList({
 export function ForecastPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
-  const forecast = buildCashFlowForecast(data, systemClock.today());
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
+  const forecast = buildCashFlowForecast(data, today);
   return (
     <>
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('insights.title')}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          {t('insights.description')}
-        </p>
-      </section>
-      <RuleInsightsPanel />
-      <DuplicateReviewPanel />
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('insights.title')}</h1>
+      </header>
       {!data.openingBalance ? (
         <p className="rounded-xl bg-amber-50 p-4 text-amber-950">
           {t('forecast.openingRequired')}{' '}
@@ -302,6 +298,8 @@ export function ForecastPage() {
           </section>
         </>
       )}
+      <RuleInsightsPanel />
+      <DuplicateReviewPanel />
     </>
   );
 }
@@ -318,7 +316,9 @@ function ForecastMetric({ label, value }: { label: string; value: string }) {
 function RuleInsightsPanel() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
-  const insights = buildRuleInsights(data, systemClock.today());
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
+  const insights = buildRuleInsights(data, today);
   return (
     <section className="mb-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
       <h2 className="text-xl font-semibold">{t('insights.ruleTitle')}</h2>
@@ -498,24 +498,21 @@ function DuplicateReviewPanel() {
 export function ChatPage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<ReturnType<
     typeof answerRecordedQuestion
   > | null>(null);
   function submit(event: FormEvent) {
     event.preventDefault();
-    setAnswer(answerRecordedQuestion(data, systemClock.today(), question));
+    setAnswer(answerRecordedQuestion(data, today, question));
   }
   return (
     <div className="chat-page">
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('chat.title')}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          {t('chat.description')}
-        </p>
-      </section>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('chat.title')}</h1>
+      </header>
       <p className="mb-5 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
         {t('chat.limits')}
       </p>

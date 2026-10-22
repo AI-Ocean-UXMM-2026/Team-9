@@ -11,6 +11,24 @@
   "menu": "Menu",
   "close": "Close menu",
   "workspace": "YOUR WORKSPACE",
+  "record": {
+    "action": "Record"
+  },
+  "payments": {
+    "nav": "Payments",
+    "title": "Payments",
+    "upcoming": "Upcoming",
+    "owed": "Owed"
+  },
+  "activity": {
+    "eyebrow": "YOUR RECORDS"
+  },
+  "more": {
+    "nav": "More",
+    "title": "More tools",
+    "eyebrow": "SUPPORTING TOOLS",
+    "description": "Ask about saved records, check record completeness, or update your starting point."
+  },
   "prototype": "FRONTEND PROTOTYPE",
   "phase": "M8 · Demo and security",
   "status": "Not implemented yet",
@@ -32,21 +50,20 @@
     "delete": "Delete"
   },
   "opening": {
-    "title": "Set your opening balance",
-    "intro": "Enter the cash amount you had at a specific date and time. This is a starting point for the demo, not a bank verification.",
+    "title": "Opening balance",
     "amount": "Opening amount (MMK)",
+    "amountPlaceholder": "0",
     "referenceAt": "Balance date and time",
-    "timezone": "Time is interpreted in Asia/Rangoon (UTC+06:30).",
     "save": "Save opening balance",
     "update": "Update opening balance",
     "saved": "Opening balance saved.",
-    "futureError": "The opening reference time cannot be in the future."
+    "futureError": "The opening reference time cannot be in the future.",
+    "invalidLocalTime": "Choose a valid local date and time."
   },
   "balance": {
     "available": "Recorded available balance",
     "netMovement": "Net cash movement",
-    "allTime": "Settled income minus settled expenses across all recorded dates.",
-    "asOf": "Opening reference date: {{date}} · calculated from settled records",
+    "asOf": "As of {{date}}",
     "reviewOpeningDay": "{{count}} transaction(s) on the opening date need a timing choice:",
     "unconfirmedDisclosure": "The balance includes {{count}} auto-recorded payment assumption(s) that still need your confirmation."
   },
@@ -92,8 +109,8 @@
     "recurring": "Scheduled payment"
   },
   "transactions": {
-    "title": "Transactions",
-    "nav": "Transactions",
+    "title": "Activity",
+    "nav": "Activity",
     "description": "Keep everyday income and expenses together.",
     "items": [
       "Add, edit and search records",
@@ -104,6 +121,7 @@
     "add": "Add transaction",
     "edit": "Correct existing record",
     "editHelp": "Changes update this record in place so its history stays connected.",
+    "linkedEditHelp": "Changing the transaction date records when it was actually paid. The original scheduled due date stays unchanged.",
     "save": "Save transaction",
     "saveCorrection": "Save correction",
     "openingRequired": "Set an opening balance before adding transactions.",
@@ -124,14 +142,12 @@
   },
   "dashboard": {
     "title": "Your financial picture, in one place.",
-    "nav": "Dashboard",
-    "overview": "Your overview",
-    "calculated": "Calculated from records",
-    "balanceSetup": "Not set yet",
-    "description": "See what you have, what is due, and what needs your attention.",
-    "recent": "Recent transactions",
-    "recentHelp": "Your latest recorded activity.",
-    "empty": "Add a transaction to begin building your record.",
+    "nav": "Home",
+    "nextPayments": "Next payments",
+    "allPayments": "All payments",
+    "noUpcoming": "No upcoming payments.",
+    "recent": "Recent activity",
+    "empty": "No activity yet.",
     "outstanding": "Outstanding · receivable / payable",
     "outstandingHelp": "Open due dates and obligations",
     "periodSummary": "Cash movement by period",
@@ -141,9 +157,8 @@
     "last30Days": "Last 30 days",
     "periodIncome": "Income",
     "periodExpenses": "Expenses",
-    "settledOnly": "Based on {{count}} settled transaction(s); pending items are excluded.",
+    "settledOnly": "Settled transactions only. Pending items are excluded.",
     "monthlyChart": "Monthly income and expenses",
-    "monthlyChartHelp": "Settled cash movement over the latest six months.",
     "monthlyChartAccessible": "Bar chart comparing settled income and expenses over six months.",
     "items": [
       "Recorded available balance and net cash movement",
@@ -152,11 +167,11 @@
     ]
   },
   "capture": {
-    "title": "Upload & review",
-    "nav": "Upload & review",
+    "title": "Review a receipt or screenshot",
+    "nav": "Review a receipt",
     "description": "Review a receipt or screenshot and confirm its details before saving a record.",
     "uploadTitle": "Choose a receipt or screenshot",
-    "privacy": "Prototype only: the image stays in this browser tab and is never sent to a service. Only reviewed transaction fields are saved; the image preview is discarded when you leave this screen.",
+    "privacy": "Images stay in this tab and are never sent or stored. Only reviewed transaction fields are saved.",
     "imageLabel": "Receipt or screenshot (JPEG, PNG, or WebP; up to 5 MB)",
     "fileTypeError": "Choose a JPEG, PNG, or WebP image.",
     "emptyFileError": "That image file is empty. Choose another file or enter the details manually.",
@@ -169,7 +184,7 @@
     "sampleDescription": "Sample receipt purchase",
     "chooseReviewMode": "Choose sample extraction or manual entry before reviewing fields.",
     "reviewTitle": "Review transaction fields",
-    "reviewHelp": "Check the amount, date, payment status, category, and description. This prototype does not read the image.",
+    "reviewHelp": "",
     "confirmReview": "I reviewed and confirm these transaction fields.",
     "reviewRequired": "Review the fields and confirm them before saving.",
     "saveReviewed": "Save reviewed transaction",
@@ -209,7 +224,7 @@
     "nav": "Schedules",
     "description": "One-time and monthly payments, with a shared lifecycle.",
     "add": "Add a payment schedule",
-    "addHelp": "Future payments stay scheduled. When due, the demo records an unconfirmed assumption for you to review. Monthly schedules catch up missed months and show a rolling one-year forecast.",
+    "addHelp": "Future payments stay out of cash totals. Due payments are auto-recorded as unconfirmed.",
     "repeat": "Repeats",
     "oneTime": "One time",
     "monthly": "Monthly",
@@ -217,7 +232,7 @@
     "dayOfMonth": "Day of month (1–31)",
     "endDate": "Last eligible date (optional)",
     "monthlyDayLabel": "Monthly · day {{day}} (clamped to month end)",
-    "forecastHelp": "Monthly schedules show past occurrences and a rolling one-year forecast. Forecasts do not count in cash totals.",
+    "forecastHelp": "",
     "save": "Save schedule",
     "saveError": "This schedule could not be saved. Check the details and try again.",
     "list": "Your payment schedules",
@@ -243,11 +258,11 @@
     "explicitly_unpaid": "Marked unpaid"
   },
   "insights": {
-    "title": "Look ahead with clarity",
-    "nav": "Forecast & insights",
+    "nav": "Insights",
+    "title": "Forecast and insights",
     "description": "Understand upcoming obligations and patterns in your records.",
     "ruleTitle": "Signals from your records",
-    "ruleHelp": "Rule-based observations with supporting records. These are prompts to review, not financial advice.",
+    "ruleHelp": "Rule based. Not financial advice.",
     "noSignals": "No signals meet the current data thresholds.",
     "evidenceRow": "{{description}} · recorded {{date}} · {{amount}} MMK{{due}}",
     "evidenceDueDate": " · due {{date}}",
@@ -277,7 +292,7 @@
     "shortfallTitle": "Projected cash shortfall",
     "shortfallObserved": "The expected case projects {{base}} MMK shortfall; the delayed-inflow case projects {{delayed}} MMK.",
     "shortfallInterpretation": "This estimate uses your opening balance and recorded obligations; it is not a verified account balance.",
-    "duplicatesHelp": "Only strong matches are shown. Review both records and choose whether to keep both or remove one.",
+    "duplicatesHelp": "Review both records before keeping or removing one.",
     "duplicateReviewTitle": "Duplicate review",
     "noDuplicates": "No unreviewed exact-match pairs found.",
     "removeChoice": "Choose the record to remove",
@@ -310,9 +325,9 @@
     "lateBalance": "Delayed-income balance"
   },
   "chat": {
-    "title": "Ask your companion",
-    "nav": "Ask AI",
-    "description": "A rule-based demonstration grounded in records saved in this browser.",
+    "title": "Ask about your records",
+    "nav": "Ask about records",
+    "description": "A rule-based demo grounded in records saved in this browser.",
     "limits": "Rule-based demo only. Answers use records currently saved in this browser. Unsupported questions and requests for financial, legal or tax advice are declined.",
     "questionLabel": "Ask about your records",
     "questionPlaceholder": "For example: What do I owe?",
@@ -338,12 +353,13 @@
   "readiness": {
     "title": "Prepare your records",
     "nav": "Record readiness",
+    "description": "Review record checks and your supporting-document checklist.",
     "description": "Review how complete your records are and keep track of supporting documents.",
     "disclaimer": "This checklist describes records you have entered or say you have available. It is not a credit score, creditworthiness assessment, or loan approval prediction. No document files are uploaded here.",
     "recordChecksTitle": "Record checks",
-    "recordChecksHelp": "These checks update from the records saved in this browser.",
+    "recordChecksHelp": "",
     "documentsTitle": "Supporting document checklist",
-    "documentsHelp": "Mark items you have available. This records checklist status only; it does not upload or store document files.",
+    "documentsHelp": "Checklist status only. Document files are not uploaded or stored.",
     "checkCount": "{{completed}} of {{total}} complete",
     "categorizedCount": "{{categorized}} of {{total}} transaction(s) have a category.",
     "checkStatus": {
@@ -372,10 +388,9 @@
     ]
   },
   "settings": {
-    "title": "Make a clear starting point",
+    "title": "Settings",
     "nav": "Settings",
-    "description": "Manage your starting point for recorded balances.",
-    "carryForward": "Your recorded available balance carries forward from this reference point as settled transactions are added.",
+    "timeZone": "Time zone",
     "items": [
       "Opening balance with its reference date and time",
       "Automatic daily carry-forward",

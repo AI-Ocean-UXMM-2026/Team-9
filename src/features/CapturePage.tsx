@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CategorySuggestion } from '../components/CategorySuggestion';
-import { BUSINESS_TIME_ZONE, type Transaction } from '../domain/types';
-import { systemClock } from '../services/clock';
+import type { Transaction } from '../domain/types';
+import { clockForTimeZone, systemClock } from '../services/clock';
+import { dateInTimeZone } from '../services/timeZone';
 import { useDemoStore } from '../store/demoStore';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -12,19 +13,11 @@ const newId = () =>
   globalThis.crypto?.randomUUID?.() ??
   `capture-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-function businessDate(instant: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date(instant));
-  return `${parts.find((part) => part.type === 'year')?.value}-${parts.find((part) => part.type === 'month')?.value}-${parts.find((part) => part.type === 'day')?.value}`;
-}
-
 export function CapturePage() {
   const { t } = useTranslation();
   const data = useDemoStore((state) => state.data);
+  const timeZone = useDemoStore((state) => state.timeZone);
+  const today = clockForTimeZone(timeZone).today();
   const save = useDemoStore((state) => state.saveTransaction);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -34,7 +27,7 @@ export function CapturePage() {
   );
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(systemClock.today());
+  const [date, setDate] = useState(today);
   const [cashStatus, setCashStatus] = useState<'settled' | 'pending'>(
     'settled',
   );
@@ -57,7 +50,7 @@ export function CapturePage() {
     (category) => category.type === type || category.type === 'both',
   );
   const openingDay = data.openingBalance
-    ? businessDate(data.openingBalance.referenceAt)
+    ? dateInTimeZone(data.openingBalance.referenceAt, data.openingBalance.timeZone)
     : '';
   const showOpeningChoice = Boolean(data.openingBalance && date === openingDay);
 
@@ -93,7 +86,7 @@ export function CapturePage() {
     setExtraction('sample');
     setType('expense');
     setAmount('12500');
-    setDate(systemClock.today());
+    setDate(today);
     setCashStatus('settled');
     setDueDate('');
     setCategoryId('');
@@ -108,7 +101,7 @@ export function CapturePage() {
     setExtraction('manual');
     setType('expense');
     setAmount('');
-    setDate(systemClock.today());
+    setDate(today);
     setCashStatus('settled');
     setDueDate('');
     setCategoryId('');
@@ -139,7 +132,7 @@ export function CapturePage() {
       setError(t('form.amountError'));
       return;
     }
-    if (cashStatus === 'settled' && date > systemClock.today()) {
+    if (cashStatus === 'settled' && date > today) {
       setError(t('transactions.futureSettled'));
       return;
     }
@@ -187,7 +180,7 @@ export function CapturePage() {
     setFile(null);
     setExtraction(null);
     setAmount('');
-    setDate(systemClock.today());
+    setDate(today);
     setCashStatus('settled');
     setDueDate('');
     setCategoryId('');
@@ -199,14 +192,9 @@ export function CapturePage() {
 
   return (
     <>
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('capture.title')}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          {t('capture.description')}
-        </p>
-      </section>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('capture.title')}</h1>
+      </header>
 
       {!data.openingBalance ? (
         <p className="mb-5 rounded-xl bg-amber-50 p-4 text-amber-950">
@@ -276,7 +264,6 @@ export function CapturePage() {
       {extraction ? (
         <section className="mt-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
           <h2 className="text-xl font-semibold">{t('capture.reviewTitle')}</h2>
-          <p className="mt-2 text-sm text-muted">{t('capture.reviewHelp')}</p>
           <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.type')}

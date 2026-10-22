@@ -3,6 +3,7 @@ import { persist, type StateStorage } from 'zustand/middleware';
 import {
   emptyAppData,
   appDataSchema,
+  isValidTimeZone,
   persistedStoreSchema,
   transactionSchema,
   scheduledRuleSchema,
@@ -15,7 +16,7 @@ import {
 } from '../domain/types';
 import type { ReadinessDocumentId } from '../domain/readiness';
 import { processSchedules } from '../domain/scheduleLifecycle';
-import { systemClock, type Clock } from '../services/clock';
+import { clockForTimeZone, systemClock, type Clock } from '../services/clock';
 import {
   browserStorage,
   createSafeJsonStorage,
@@ -24,6 +25,7 @@ import {
 } from './persistence';
 
 export interface DemoStore extends PersistedStore {
+  setTimeZone(timeZone: string): void;
   replaceData(data: AppData): void;
   setOpeningBalance(openingBalance: AppData['openingBalance']): void;
   saveTransaction(transaction: Transaction): void;
@@ -42,6 +44,8 @@ export function createDemoStore(
   backingStorage: StateStorage = browserStorage,
   options: { skipHydration?: boolean } = {},
 ) {
+  const localTimeZone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Rangoon';
   const jsonStorage = createSafeJsonStorage(backingStorage, (message) => {
     store.setState({ storageNotice: message });
   });
@@ -51,6 +55,21 @@ export function createDemoStore(
       (set, get) => ({
         data: emptyAppData(),
         storageNotice: null,
+        timeZone: localTimeZone,
+        setTimeZone: (timeZone) => {
+          if (!isValidTimeZone(timeZone))
+            throw new Error('Choose a valid time zone.');
+          const current = get().data;
+          set({
+            timeZone,
+            data: appDataSchema.parse({
+              ...current,
+              openingBalance: current.openingBalance
+                ? { ...current.openingBalance, timeZone }
+                : null,
+            }),
+          });
+        },
         replaceData: (data) => {
           const validated = appDataSchema.parse(data);
           set({ data: validated });
@@ -194,7 +213,8 @@ export function createDemoStore(
             }),
           });
         },
-        createScheduleRule: (rule, clock = systemClock) => {
+        createScheduleRule: (rule, clock) => {
+          clock ??= clockForTimeZone(get().timeZone);
           const parsed = scheduledRuleSchema.parse(rule);
           const current = get().data;
           if (current.scheduleRules.some((item) => item.id === parsed.id)) {
@@ -206,7 +226,8 @@ export function createDemoStore(
           });
           set({ data: processSchedules(created, clock) });
         },
-        processDueSchedules: (clock = systemClock) => {
+        processDueSchedules: (clock) => {
+          clock ??= clockForTimeZone(get().timeZone);
           const current = get().data;
           const processed = processSchedules(current, clock);
           if (processed !== current) set({ data: processed });
@@ -361,6 +382,7 @@ export function createDemoStore(
           ({
             data: state.data,
             storageNotice: state.storageNotice,
+            timeZone: state.timeZone,
           }) as DemoStore,
         migrate: (_persistedState, previousVersion) => ({
           data: emptyAppData(),

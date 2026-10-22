@@ -17,14 +17,9 @@ export function ReadinessPage() {
 
   return (
     <>
-      <section className="mb-7">
-        <h1 tabIndex={-1} className="text-3xl font-semibold sm:text-5xl">
-          {t('readiness.title')}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          {t('readiness.description')}
-        </p>
-      </section>
+      <header className="page-heading">
+        <h1 tabIndex={-1}>{t('readiness.title')}</h1>
+      </header>
 
       <p className="mb-6 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
         {t('readiness.disclaimer')}
@@ -36,9 +31,6 @@ export function ReadinessPage() {
             <h2 className="text-xl font-semibold">
               {t('readiness.recordChecksTitle')}
             </h2>
-            <p className="mt-1 text-sm text-muted">
-              {t('readiness.recordChecksHelp')}
-            </p>
           </div>
           <p className="text-sm font-semibold" role="status">
             {t('readiness.checkCount', {
