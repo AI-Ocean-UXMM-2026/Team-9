@@ -6,7 +6,7 @@
 
 @theme {
   --color-ink: #17283e;
-  --color-muted: #68778b;
+  --color-muted: #4b5d73;
   --color-accent: #0866e8;
   --color-canvas: #f1f5fb;
 }
@@ -1645,7 +1645,7 @@ body:has(.transaction-composer-page) .quick-add-backdrop { display: none !import
 .activity-record-item { display: flex; min-width: 0; align-items: center; gap: 13px; padding: 17px 0; border-top: 1px solid #e8eef5; }
 .activity-category-icon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 14px; background: #edf5ff; color: #0866e8; }
 .activity-record-copy { min-width: 0; flex: 1; }
-.activity-category-name { overflow: hidden; margin: 0; color: #0866e8; font-size: 0.95rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.activity-category-name { overflow: hidden; margin: 0; color: #17283e; font-size: 0.95rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .activity-record-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 4px; color: #17283e; font-size: 0.77rem; }
 .activity-record-meta time { color: #17283e; font-variant-numeric: tabular-nums; }
 .activity-record-due, .activity-record-description { color: #5c7088; font-size: 0.75rem; }
@@ -2314,7 +2314,39 @@ body:has(.transaction-composer-page) .quick-add-backdrop { display: none !import
 .account-delete-form { display: grid; gap: 13px; padding: 17px; }
 .account-delete-form label { display: grid; gap: 8px; color: #536d88; font-size: 0.8rem; }
 .account-delete-form input { width: 100%; min-height: 44px; padding: 10px 13px; border: 1px solid #d4e0ee; border-radius: 10px; }
-.account-delete-form button { width: fit-content; min-height: 44px; padding: 0 14px; border: 1px solid #eccbd0; border-radius: 10px; background: #fff; color: #ad3041; font-size: 0.8rem; font-weight: 650; }
+.account-delete-form button { width: fit-content; min-height: 44px; padding: 0 14px; border: 1px solid rgb(0 0 0 / 0.08); border-radius: 10px; background: #ff3b30; color: #fff; font-size: 0.86rem; font-weight: 680; box-shadow: var(--control-shadow); }
+.account-settings > .insight-secondary-panel { width: 100%; max-width: var(--container-xl, 36rem); border-color: #ff3b30; }
+.account-settings > .insight-secondary-panel > .disclosure-trigger { background: #ff3b30; color: #fff; font-size: 0.88rem; font-weight: 660; }
+.account-settings > .insight-secondary-panel > .disclosure-trigger:hover, .account-delete-form button:hover:not(:disabled) { background: #ff5147; }
+.account-settings > .insight-secondary-panel > .disclosure-trigger:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+
+/* Branded, accessible single-choice menus, shared across filters and forms. */
+.app-select-trigger { display: inline-flex; min-width: 0; width: 100%; min-height: 46px; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 14px; border: 1px solid #a5b1c1; border-radius: 12px; background: #fff; color: #17283e; font: inherit; text-align: left; cursor: pointer; box-shadow: 0 1px 3px rgb(0 0 0 / 0.035); transition: border-color 140ms, background-color 140ms, box-shadow 140ms; }
+.app-select-trigger:hover:not(:disabled) { border-color: #7b8ca2; background: #fafbfd; }
+.app-select-trigger[data-popup-open] { border-color: #0866e8; }
+.settings-panel .app-select-trigger.timezone-select { border-color: rgb(0 0 0 / 0.08); border-radius: 13px; background: #0866e8; color: #fff; font-weight: 680; box-shadow: var(--control-shadow); }
+.settings-panel .timezone-select .app-select-chevron { color: #fff; }
+.settings-panel .app-select-trigger.timezone-select:hover:not(:disabled) { border-color: rgb(0 0 0 / 0.08); background: #0758cc; box-shadow: var(--control-shadow-hover); }
+.settings-panel .app-select-trigger.timezone-select:active:not(:disabled) { box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.08), 0 1px 4px rgb(0 0 0 / 0.09); }
+.app-select-trigger:disabled { opacity: 0.55; cursor: default; }
+.app-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-select-chevron { display: flex; flex: 0 0 auto; color: #53677f; transition: transform 180ms ease; }
+.app-select-trigger[data-popup-open] .app-select-chevron { transform: rotate(180deg); }
+.app-select-positioner { z-index: 200; outline: none; }
+.app-select-popup { min-width: var(--anchor-width); max-width: min(440px, calc(100vw - 24px)); overflow: hidden; border: 1px solid #d7dce3; border-radius: 14px; background: #fff; color: #17283e; box-shadow: 0 3px 8px rgb(0 0 0 / 0.06), 0 14px 36px rgb(0 0 0 / 0.13); transform-origin: var(--transform-origin); transition: opacity 150ms ease, transform 150ms ease; }
+.app-select-popup[data-starting-style], .app-select-popup[data-ending-style] { opacity: 0; transform: translateY(-4px) scale(0.98); }
+.app-select-list { max-height: min(320px, var(--available-height)); overflow-y: auto; overscroll-behavior: contain; padding: 6px; outline: none; scrollbar-width: thin; }
+.app-select-option { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 22px; padding: 10px 12px; border-radius: 9px; font-size: 0.9rem; line-height: 1.4; cursor: pointer; outline: none; user-select: none; }
+.app-select-option[data-selected] { background: #edf5ff; color: #0758cc; font-weight: 650; }
+.app-select-option[data-highlighted] { background: #f0f3f7; }
+.app-select-option[data-selected][data-highlighted] { background: #e2edfc; }
+.app-select-option[data-disabled] { color: #68778b; cursor: default; }
+.app-select-check { display: flex; flex: 0 0 17px; margin-left: auto; color: #0758cc; }
+.activity-filter-bar .app-select-trigger { width: auto; min-height: 39px; padding: 6px 0; border: 0; background: transparent; box-shadow: none; color: #243a54; font-size: 0.82rem; font-weight: 630; }
+.movement-toolbar .app-select-trigger { margin-top: 7px; font-size: 0.86rem; font-weight: 600; }
+@media (max-width: 760px) { .app-select-option { min-height: 44px; } .app-select-trigger { font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { .app-select-popup, .app-select-chevron, .app-select-trigger { transition: none; } }
+@media (forced-colors: active) { .app-select-option[data-selected], .app-select-option[data-highlighted] { background: Highlight; color: HighlightText; forced-color-adjust: none; } .app-select-check { color: inherit; } }
 .future-feature-notice { margin-bottom: 23px; padding: 15px 18px; border: 1px solid #e0e9f6; border-radius: 15px; background: #f1f6fd; color: #647991; font-size: 0.8rem; line-height: 1.6; }
 .future-chat-welcome { display: grid; justify-items: center; padding: 50px 15px; text-align: center; }
 .future-chat-welcome > span { display: grid; place-items: center; width: 57px; height: 57px; margin-bottom: 22px; border-radius: 18px; background: #edf4ff; color: #0866e8; }
@@ -2397,3 +2429,107 @@ body:has(.transaction-composer-page) .quick-add-backdrop { display: none !import
   .access-form-privacy { margin-top: 12px; font-size: 0.59rem; }
   .access-stage[data-view=auth] .access-footer { bottom: 12px; }
 }
+
+/* Personal profile uses the same readable form controls on desktop and mobile. */
+.profile-page { max-width: 800px; }
+.profile-back { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; margin-bottom: 12px; color: #5c7088; font-size: 0.85rem; }
+.profile-card { padding: clamp(20px, 4vw, 36px); }
+.profile-summary { display: flex; align-items: center; gap: 16px; padding-bottom: 26px; margin-bottom: 26px; border-bottom: 1px solid #e8eef5; }
+.profile-avatar { display: grid; flex: 0 0 60px; height: 60px; place-items: center; border-radius: 20px; background: #edf5ff; color: #0866e8; }
+.profile-summary > div { min-width: 0; }
+.profile-summary h2 { margin: 0; color: #17283e; font-size: 1.2rem; overflow-wrap: anywhere; }
+.profile-summary p { margin: 4px 0 0; color: #5c7088; overflow-wrap: anywhere; }
+.profile-form { display: grid; gap: 24px; }
+.profile-form label { display: grid; gap: 9px; color: #435c79; font-size: 0.9rem; font-weight: 600; }
+.profile-form label > span { display: flex; align-items: center; gap: 8px; }
+.profile-form input { width: 100%; min-width: 0; min-height: 50px; padding: 12px 15px; border: 1px solid #cddced; border-radius: 13px; background: #fff; color: #17283e; font: inherit; font-weight: 400; }
+.profile-form input:focus-visible { outline: 2px solid #0866e8; outline-offset: 3px; }
+.profile-form small { color: #5c7088; font-size: 0.8rem; font-weight: 400; line-height: 1.6; }
+.profile-form-actions { display: flex; justify-content: flex-end; }
+.profile-form .action-button:disabled { opacity: 0.5; cursor: default; }
+.profile-error { padding: 12px 15px; border-radius: 12px; background: #fff1f2; color: #b4233d; }
+.profile-saved { display: flex; align-items: center; gap: 8px; color: #21865d; }
+.mobile-tab > span { max-width: 100%; text-align: center; line-height: 1.2; }
+
+/* Legible content and neutral depth: white surfaces retain a clear hierarchy. */
+:root {
+  --text-primary: #17283e;
+  --text-secondary: #4b5d73;
+  --muted-foreground: #4b5d73;
+  --surface-edge: #d7dce3;
+  --surface-shadow: 0 0 0 1px rgb(0 0 0 / 0.015), 0 2px 5px rgb(0 0 0 / 0.035), 0 9px 24px rgb(0 0 0 / 0.055);
+  --control-shadow: inset 0 1px 1px rgb(255 255 255 / 0.22), 0 0 0 1px rgb(0 0 0 / 0.025), 0 2px 5px rgb(0 0 0 / 0.09), 0 6px 18px rgb(0 0 0 / 0.12);
+  --control-shadow-hover: inset 0 1px 1px rgb(255 255 255 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.025), 0 3px 7px rgb(0 0 0 / 0.10), 0 9px 23px rgb(0 0 0 / 0.14);
+}
+.text-muted, .balance-caption, .balance-asof, .summary-card-heading, .summary-note,
+.upcoming-date, .upcoming-list small, .activity-record-due, .activity-record-description,
+.schedule-row-meta, .schedule-row-detail, .owed-record-meta, .forecast-chart-header span,
+.composer-currency, .composer-field > span, .profile-summary p, .profile-form small,
+.credit-requirement-heading p, .credit-checklist-note, .credit-evidence-heading p,
+.credit-money-stat > span, .credit-date-range, .credit-evidence-counts dt,
+.account-profile-link small, .access-privacy, .access-password-help, .access-form-privacy,
+.access-card-copy small, .access-footer { color: var(--text-secondary); }
+.summary-card-heading, .balance-caption, .profile-form label { font-weight: 600; }
+.activity-record-meta, .schedule-row-meta, .owed-record-meta { font-weight: 500; }
+.activity-record-due, .activity-record-description { font-size: 0.82rem; }
+.forecast-axis-label, .forecast-chart-unit { fill: var(--text-secondary); }
+.access-form input::placeholder, .composer-note-field input::placeholder,
+.profile-form input::placeholder { color: #5b6d82; opacity: 1; }
+.activity-record-amount-expense, .schedule-row-amount-expense, .owed-record-amount-expense { color: #c12c38; }
+.page-content :is(.surface-card, .balance-card, .summary-card, .recent-card,
+  .home-upcoming, .movement-details, .forecast-chart-panel, .insight-secondary-panel,
+  .utility-card, .transaction-composer, .credit-checklist-panel, .credit-evidence-panel,
+  .credit-export-panel), .page-content section.rounded-3xl {
+  border-color: var(--surface-edge);
+  box-shadow: var(--surface-shadow);
+}
+.access-form-panel { border-color: var(--surface-edge); box-shadow: var(--surface-shadow); }
+.chat-page > .chat-composer {
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #b8c3d1;
+  border-radius: 16px;
+  background: #e9edf3;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.035), 0 7px 20px rgb(0 0 0 / 0.07);
+  backdrop-filter: none;
+}
+.chat-page > .chat-composer .chat-input {
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #17283e;
+  box-shadow: none;
+  font-size: 1rem;
+}
+.chat-page > .chat-composer .chat-input::placeholder { color: #566981; opacity: 1; }
+.chat-page > .chat-composer .chat-input:focus-visible { outline: none; }
+.chat-page > .chat-composer:focus-within { border-color: #0758cc; box-shadow: 0 0 0 1px #0758cc, 0 7px 20px rgb(0 0 0 / 0.07); }
+.chat-page > .chat-composer .chat-send { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; }
+:is(.action-button, .record-action, .pill-button-primary, .composer-submit, .chat-send,
+  .global-add-button, .budget-save-button, .access-submit, .access-get-started,
+  button.bg-accent, button.bg-primary, a.bg-accent, a.bg-primary) {
+  border-color: rgb(0 0 0 / 0.08);
+  box-shadow: var(--control-shadow);
+}
+:is(.activity-edit-button, .activity-delete-button, .schedule-cancel-button,
+  .schedule-row-actions button, .owed-record-actions button, .activity-filter-trigger) {
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.045);
+}
+.page-content :is(input:not([type=checkbox]):not([type=radio]), select, textarea):not(.composer-amount-field input) {
+  border-color: #a5b1c1;
+}
+:is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid #0758cc;
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  :is(.access-submit, .access-get-started):hover:not(:disabled) { box-shadow: var(--control-shadow-hover); }
+  .page-content .utility-card:hover { border-color: #a5b1c1; box-shadow: 0 3px 8px rgb(0 0 0 / 0.045), 0 12px 26px rgb(0 0 0 / 0.075); }
+}
+@media (prefers-contrast: more) {
+  :root { --text-secondary: #273a50; --surface-edge: #738196; --surface-shadow: none; }
+  .page-content :is(input:not([type=checkbox]):not([type=radio]), select, textarea):not(.composer-amount-field input) { border-color: #53677f; }
+}
+@media (max-width: 760px) { .profile-form input { font-size: 16px; } .profile-form-actions .action-button { width: 100%; justify-content: center; } }

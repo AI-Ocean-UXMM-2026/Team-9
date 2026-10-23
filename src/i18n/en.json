@@ -1,5 +1,5 @@
 {
-  "brand": "FinTech Companion",
+  "brand": "Shwe Taw Pyan Chi",
   "tagline": "A clearer view of your money",
   "demo": "Demo mode: simulated data. Do not enter real financial information.",
   "skip": "Skip to content",
@@ -15,8 +15,8 @@
     "action": "Record"
   },
   "payments": {
-    "nav": "Payments",
-    "title": "Payments",
+    "nav": "Bills & payments",
+    "title": "Bills & payments",
     "upcoming": "Schedule",
     "owed": "Owed",
     "schedule": "Schedule",
@@ -70,7 +70,7 @@
   "error": "Something went wrong",
   "errorBody": "Reload the prototype to try again.",
   "reload": "Reload",
-  "footer": "Built for everyday clarity. Synthetic data only.",
+  "footer": "Your records. One clear picture.",
   "dismiss": "Dismiss",
   "form": {
     "amountError": "Enter a whole MMK amount within the supported limit.",
@@ -140,8 +140,8 @@
     "recurring": "Scheduled payment"
   },
   "transactions": {
-    "title": "Activity",
-    "nav": "Activity",
+    "title": "Transactions",
+    "nav": "Transactions",
     "description": "Keep everyday income and expenses together.",
     "items": [
       "Add, edit and filter records",
@@ -452,7 +452,11 @@
     "items": [
       "Opening balance with its reference date and time",
       "Automatic daily carry-forward",
-      "Synthetic data reset and forecast preferences"
+      "Data management and forecast preferences"
     ]
+  },
+  "profile": {
+    "nav": "View my profile",
+    "title": "My profile"
   }
 }

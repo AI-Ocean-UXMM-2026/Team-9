@@ -1,4 +1,4 @@
-# FinTech Companion demo guide
+# Shwe Taw Pyan Chi demo guide
 
 Use synthetic information only. This local prototype does not connect to a bank, wallet, OCR service or AI service. A full walkthrough takes about 6–8 minutes.
 

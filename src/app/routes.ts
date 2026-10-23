@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Settings,
   MessageCircle,
+  UserRound,
 } from 'lucide-react';
 export const screens = [
   { id: 'dashboard', path: '/', icon: LayoutDashboard },
@@ -31,6 +32,7 @@ export const primaryDestinations = [
 ] as const;
 
 export const utilityDestinations = [
+  { id: 'profile', path: '/profile', icon: UserRound },
   { id: 'chat', path: '/chat', icon: MessageCircle },
   { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
   { id: 'settings', path: '/settings', icon: Settings },

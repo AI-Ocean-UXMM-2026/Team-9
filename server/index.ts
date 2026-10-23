@@ -291,6 +291,52 @@ const server = createServer(async (req, res) => {
       }
       const user = currentUser(req);
       if (!user) throw new HttpError(401, 'Please sign in to continue.');
+      if (route === '/api/auth/profile' && req.method === 'PATCH') {
+        limited(req, 'profile');
+        const parsed = z
+          .object({
+            name: z.string().trim().min(1).max(100),
+            email: emailSchema,
+            currentPassword: z.string().max(128).optional(),
+          })
+          .safeParse(await body(req));
+        if (!parsed.success)
+          throw new HttpError(
+            400,
+            'Enter your name and a valid email address.',
+          );
+        const { name, email, currentPassword } = parsed.data;
+        const emailChanged = email !== user.email;
+        if (
+          emailChanged &&
+          !(await authenticatedPassword(user, currentPassword || ''))
+        )
+          throw new HttpError(
+            401,
+            'Enter your current password to change your email.',
+          );
+        try {
+          db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(
+            name,
+            email,
+            user.id,
+          );
+        } catch (error) {
+          if (String(error).includes('UNIQUE'))
+            throw new HttpError(
+              409,
+              'An account already uses this email address.',
+            );
+          throw error;
+        }
+        const updated = { ...user, name, email };
+        if (emailChanged) {
+          db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+          beginSession(req, res, updated);
+        }
+        reply(res, 200, { user: publicUser(updated) });
+        return;
+      }
       if (route === '/api/records' && req.method === 'GET') {
         const row = db
           .prepare('SELECT payload FROM records WHERE user_id = ?')

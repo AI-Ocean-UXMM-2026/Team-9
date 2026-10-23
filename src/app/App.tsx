@@ -11,7 +11,6 @@ import type { TFunction } from 'i18next';
 import {
   ArrowLeftRight,
   CircleDollarSign,
-  FlaskConical,
   Menu,
   Plus,
   Upload,
@@ -33,6 +32,7 @@ import {
   TransactionsPage,
 } from '../features/FinancialPages';
 import { MorePage } from '../features/MorePage';
+import { ProfilePage } from '../features/ProfilePage';
 import { FutureAIPage } from '../features/FutureAIPage';
 import { AccountControls, AccountNotices } from '../auth/AccountControls';
 import { PaymentsLayout } from '../features/PaymentsLayout';
@@ -48,6 +48,7 @@ function routeName(pathname: string, t: TFunction) {
   )
     return t('payments.nav');
   if (pathname.startsWith('/transactions/')) return t('transactions.nav');
+  if (pathname === '/profile') return t('profile.title');
   if (pathname === '/chat') return t('chat.nav');
   if (pathname === '/budget') return t('budget.title');
   if (pathname === '/more') return t('more.nav');
@@ -342,14 +343,6 @@ export function App() {
             </Link>
             <div className="topbar-actions">
               <AccountControls />
-              <span
-                className="demo-badge"
-                title={t('demo')}
-                aria-label={t('demo')}
-              >
-                <FlaskConical size={14} aria-hidden="true" />
-                {t('demoMode', { defaultValue: 'Synthetic data' })}
-              </span>
             </div>
           </header>
           <main id="main" tabIndex={-1} className="page-content">
@@ -418,6 +411,7 @@ export function App() {
                     element={<Navigate to="/payments/owed-to-me" replace />}
                   />
                   <Route path="/more" element={<MorePage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/chat" element={<FutureAIPage />} />
                   <Route
                     path="*"
@@ -453,6 +447,7 @@ export function App() {
                 end={path === '/'}
                 className={({ isActive }) => {
                   const utilityPage = [
+                    '/profile',
                     '/chat',
                     '/readiness',
                     '/settings',

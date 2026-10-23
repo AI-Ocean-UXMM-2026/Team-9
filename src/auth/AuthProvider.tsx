@@ -31,6 +31,11 @@ interface AuthValue {
     fields: { name: string; email: string; password: string },
   ): Promise<void>;
   signOut(): Promise<void>;
+  updateProfile(fields: {
+    name: string;
+    email: string;
+    currentPassword?: string;
+  }): Promise<void>;
   deleteAccount(password: string): Promise<void>;
   importLocalRecords(): void;
   retrySync(): Promise<void>;
@@ -246,6 +251,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await accountRequest('auth/logout', 'POST', {}, okSchema);
     clearWorkspace();
   }
+  async function updateProfile(fields: {
+    name: string;
+    email: string;
+    currentPassword?: string;
+  }) {
+    const result = await accountRequest(
+      'auth/profile',
+      'PATCH',
+      fields,
+      z.object({ user: userSchema }),
+    );
+    userRef.current = result.user;
+    setUser(result.user);
+  }
   async function deleteAccount(password: string) {
     clearTimeout(timer.current);
     await queue.current.catch(() => undefined);
@@ -278,6 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         canImport,
         authenticate,
         signOut,
+        updateProfile,
         deleteAccount,
         importLocalRecords,
         retrySync: saveNow,

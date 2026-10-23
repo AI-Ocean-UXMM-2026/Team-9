@@ -1,3 +1,4 @@
+import { AppSelect } from '../components/AppSelect';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -546,15 +547,15 @@ function DuplicateReviewPanel() {
                 <div className="mt-3 flex flex-wrap items-end gap-3">
                   <label className="grid gap-1 text-sm font-medium">
                     {t('insights.removeChoice')}
-                    <select
+                    <AppSelect
                       className="min-h-11 rounded-xl border border-[#bccbc0] px-3"
                       value={
                         removeIds[candidate.fingerprint] ?? candidate.second.id
                       }
-                      onChange={(event) =>
+                      onValueChange={(value) =>
                         setRemoveIds((current) => ({
                           ...current,
-                          [candidate.fingerprint]: event.target.value,
+                          [candidate.fingerprint]: value,
                         }))
                       }
                     >
@@ -574,7 +575,7 @@ function DuplicateReviewPanel() {
                             t('insights.unnamedRecord'),
                         })}
                       </option>
-                    </select>
+                    </AppSelect>
                   </label>
                   <button
                     className="min-h-11 rounded-lg bg-accent px-4 py-2 font-semibold text-white"

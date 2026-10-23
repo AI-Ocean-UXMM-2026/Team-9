@@ -1,3 +1,4 @@
+import { AppSelect } from '../components/AppSelect';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -293,17 +294,17 @@ export function CapturePage() {
         ) : null}
         <label className="mt-5 grid max-w-sm gap-2 text-sm font-medium">
           {t('capture.language')}
-          <select
+          <AppSelect
             className="min-h-12 rounded-xl border border-[#bccbc0] bg-white px-3"
             value={language}
             disabled={extracting}
-            onChange={(event) =>
-              setLanguage(event.target.value as typeof language)
+            onValueChange={(value) =>
+              setLanguage(value as typeof language)
             }
           >
             <option value="eng+mya">English + Burmese</option>
             <option value="eng">English</option>
-          </select>
+          </AppSelect>
         </label>
         <div className="mt-5 flex flex-wrap gap-3">
           <button
@@ -388,12 +389,12 @@ export function CapturePage() {
           <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.type')}
-              <select
+              <AppSelect
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
                 value={type}
                 required
-                onChange={(event) => {
-                  setType(event.target.value as 'income' | 'expense' | '');
+                onValueChange={(value) => {
+                  setType(value as 'income' | 'expense' | '');
                   setCategoryId('');
                   setReviewed(false);
                 }}
@@ -403,7 +404,7 @@ export function CapturePage() {
                 </option>
                 <option value="expense">{t('transaction.expense')}</option>
                 <option value="income">{t('transaction.income')}</option>
-              </select>
+              </AppSelect>
             </label>
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.amount')}
@@ -435,12 +436,12 @@ export function CapturePage() {
             </label>
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.status')}
-              <select
+              <AppSelect
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
                 value={cashStatus}
                 required
-                onChange={(event) => {
-                  setCashStatus(event.target.value as 'settled' | 'pending');
+                onValueChange={(value) => {
+                  setCashStatus(value as 'settled' | 'pending');
                   setReviewed(false);
                 }}
               >
@@ -449,7 +450,7 @@ export function CapturePage() {
                 </option>
                 <option value="settled">{t('transaction.settled')}</option>
                 <option value="pending">{t('transaction.pending')}</option>
-              </select>
+              </AppSelect>
             </label>
             {cashStatus === 'pending' ? (
               <label className="grid gap-2 text-sm font-medium">
@@ -469,11 +470,11 @@ export function CapturePage() {
             ) : null}
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.category')}
-              <select
+              <AppSelect
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
                 value={categoryId}
-                onChange={(event) => {
-                  setCategoryId(event.target.value);
+                onValueChange={(value) => {
+                  setCategoryId(value);
                   setReviewed(false);
                 }}
               >
@@ -483,7 +484,7 @@ export function CapturePage() {
                     {t(`category.${category.id}`)}
                   </option>
                 ))}
-              </select>
+              </AppSelect>
             </label>
             <div>
               {type ? (

@@ -1,3 +1,4 @@
+import { AppSelect } from '../components/AppSelect';
 import { AccountSettings } from '../auth/AccountControls';
 import {
   useCallback,
@@ -376,11 +377,11 @@ export function DashboardPage() {
             </p>
             <label>
               {t('dashboard.reportingPeriod')}
-              <select
+              <AppSelect
                 className="field-control"
                 value={period}
-                onChange={(event) =>
-                  setPeriod(event.target.value as ReportingPeriod)
+                onValueChange={(value) =>
+                  setPeriod(value as ReportingPeriod)
                 }
               >
                 <option value="this_month">{t('dashboard.thisMonth')}</option>
@@ -388,7 +389,7 @@ export function DashboardPage() {
                 <option value="last_30_days">
                   {t('dashboard.last30Days')}
                 </option>
-              </select>
+              </AppSelect>
             </label>
           </div>
           <div className="movement-metrics">
@@ -607,18 +608,18 @@ export function SettingsPage() {
       <section className="surface-card settings-panel">
         <label className="grid max-w-xl gap-2 text-sm font-medium">
           {t('settings.timeZone')}
-          <select
-            className="field-control"
+          <AppSelect
+            className="field-control timezone-select"
             value={timeZone}
-            onChange={(event) => {
-              setTimeZone(event.target.value);
+            onValueChange={(value) => {
+              setTimeZone(value);
               useDemoStore.getState().processDueSchedules();
             }}
           >
             {availableTimeZones.map((zone) => (
               <option key={zone} value={zone}>{zone.replaceAll('_', ' ')}</option>
             ))}
-          </select>
+          </AppSelect>
         </label>
       </section>
     </>
@@ -852,30 +853,30 @@ export function SchedulesPage() {
         <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <label className="grid gap-2 text-sm font-medium">
             {t('schedules.repeat')}
-            <select
+            <AppSelect
               className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
               value={repeat}
-              onChange={(event) =>
-                setRepeat(event.target.value as 'one_time' | 'monthly')
+              onValueChange={(value) =>
+                setRepeat(value as 'one_time' | 'monthly')
               }
             >
               <option value="one_time">{t('schedules.oneTime')}</option>
               <option value="monthly">{t('schedules.monthly')}</option>
-            </select>
+            </AppSelect>
           </label>
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.type')}
-            <select
+            <AppSelect
               className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
               value={type}
-              onChange={(event) => {
-                setType(event.target.value as 'income' | 'expense');
+              onValueChange={(value) => {
+                setType(value as 'income' | 'expense');
                 setCategoryId('');
               }}
             >
               <option value="expense">{t('transaction.expense')}</option>
               <option value="income">{t('transaction.income')}</option>
-            </select>
+            </AppSelect>
           </label>
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.amount')}
@@ -930,10 +931,10 @@ export function SchedulesPage() {
           ) : null}
           <label className="grid gap-2 text-sm font-medium">
             {t('transaction.category')}
-            <select
+            <AppSelect
               className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
               value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
+              onValueChange={(value) => setCategoryId(value)}
             >
               <option value="">{t('transaction.uncategorized')}</option>
               {categories.map((category) => (
@@ -941,7 +942,7 @@ export function SchedulesPage() {
                   {t(`category.${category.id}`)}
                 </option>
               ))}
-            </select>
+            </AppSelect>
           </label>
           <label className="grid gap-2 text-sm font-medium sm:col-span-2">
             {t('transaction.description')}
@@ -1338,13 +1339,13 @@ export function TransactionsPage() {
           {editing?.paymentOccurrenceId && cashStatus === 'settled' ? (
             <label className="composer-field composer-confirmation">
               <span>{t('transaction.confirmation')}</span>
-              <select
+              <AppSelect
                 value={confirmationStatus === 'not_applicable' ? 'unconfirmed' : confirmationStatus}
-                onChange={(e) => setConfirmationStatus(e.target.value as 'unconfirmed' | 'confirmed')}
+                onValueChange={(value) => setConfirmationStatus(value as 'unconfirmed' | 'confirmed')}
               >
                 <option value="unconfirmed">{t('transaction.unconfirmed')}</option>
                 <option value="confirmed">{t('transaction.confirmed')}</option>
-              </select>
+              </AppSelect>
             </label>
           ) : null}
 
@@ -1410,11 +1411,11 @@ export function TransactionsPage() {
           <label className="activity-period-filter">
             <CalendarDays size={17} aria-hidden="true" />
             <span className="sr-only">{t('transactions.dateRange')}</span>
-            <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as 'all' | 'month' | 'custom')}>
+            <AppSelect value={dateFilter} onValueChange={(value) => setDateFilter(value as 'all' | 'month' | 'custom')}>
               <option value="all">{t('transactions.allDates')}</option>
               <option value="month">{t('transactions.specificMonth')}</option>
               <option value="custom">{t('transactions.customRange')}</option>
-            </select>
+            </AppSelect>
           </label>
           {dateFilter === 'month' ? <label className="activity-date-input"><span className="sr-only">{t('transactions.specificMonth')}</span><input type="month" value={filterMonth} onChange={(event) => setFilterMonth(event.target.value)} /></label> : null}
           {dateFilter === 'custom' ? (
@@ -1426,12 +1427,12 @@ export function TransactionsPage() {
           ) : null}
           <label className="activity-type-filter">
             <span className="sr-only">{t('transactions.filter')}</span>
-            <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+            <AppSelect value={filter} onValueChange={(value) => setFilter(value)}>
               <option value="all">{t('transactions.all')}</option>
               <option value="income">{t('transaction.income')}</option>
               <option value="expense">{t('transaction.expense')}</option>
               <option value="pending">{t('transaction.pending')}</option>
-            </select>
+            </AppSelect>
           </label>
         </div>
         {undo ? (

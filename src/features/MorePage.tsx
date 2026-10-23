@@ -3,11 +3,13 @@ import {
   Settings,
   ArrowRight,
   MessageCircle,
+  UserRound,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const items = [
+  { id: 'profile', path: '/profile', icon: UserRound },
   { id: 'chat', path: '/chat', icon: MessageCircle },
   { id: 'readiness', path: '/readiness', icon: ClipboardCheck },
   { id: 'settings', path: '/settings', icon: Settings },

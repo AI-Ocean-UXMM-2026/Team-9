@@ -13,7 +13,7 @@ export function AccountControls() {
   return (
     <div className="account-controls">
       <Link
-        to="/settings"
+        to="/profile"
         className="account-profile-link"
         title={auth.user.email}
       >

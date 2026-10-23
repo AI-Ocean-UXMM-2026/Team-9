@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { SendHorizontal, Sparkles } from 'lucide-react';
+import { ArrowUp, Sparkles } from 'lucide-react';
 import { answerRecordedQuestion } from '../domain/analysis';
 import { useDemoStore } from '../store/demoStore';
 import { clockForTimeZone } from '../services/clock';
@@ -98,7 +98,7 @@ export function FutureAIPage() {
           />
         </div>
         <button className="chat-send" aria-label="Ask demo">
-          <SendHorizontal size={20} aria-hidden="true" />
+          <ArrowUp size={22} strokeWidth={2.25} aria-hidden="true" />
         </button>
       </form>
     </div>
