@@ -5,6 +5,7 @@ A local financial records app for everyday bookkeeping in Myanmar. It provides i
 ## Hackathon submission
 
 - [Demo video (MP4)](Video_and_Slide/video.mp4)
+- [Pitching video (MP4)](Pitching_Video/Deck.mp4)
 - [Presentation slides (PDF)](Video_and_Slide/Deck.pdf)
 
 ## Credit readiness
