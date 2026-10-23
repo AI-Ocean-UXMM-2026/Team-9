@@ -1,3 +1,4 @@
+import { useUiText } from '../i18n/useUiText';
 import {
   useEffect,
   useRef,
@@ -22,6 +23,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthProvider';
 import { BrandMark } from '../components/BrandMark';
+import { LanguageSelect } from '../components/LanguageSelect';
 
 const cards = [
   {
@@ -81,6 +83,7 @@ const cards = [
 ];
 
 export function AccessPage() {
+  const text = useUiText();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -97,54 +100,84 @@ export function AccessPage() {
       : location.pathname,
   );
   const active = mode !== 'landing';
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoError, setDemoError] = useState('');
   useEffect(() => {
-    document.title = `${mode === 'landing' ? 'Welcome' : mode === 'register' ? 'Create account' : 'Sign in'} · ${t('brand')}`;
-  }, [mode, t]);
+    document.title = `${mode === 'landing' ? text('Welcome') : mode === 'register' ? text('Create account') : text('Sign in')} · ${t('brand')}`;
+  }, [mode, t, text]);
   return (
     <main className="access-stage" data-view={active ? 'auth' : 'landing'}>
       <header className="access-nav">
-        <Link to="/" className="access-brand-link">
+        <Link to="/" className="access-brand-link" aria-label={t('brand')}>
           <span>
             <BrandMark />
           </span>
-          <strong>{t('brand')}</strong>
         </Link>
+        <LanguageSelect />
         <Link
           className="access-nav-link"
           to={mode === 'login' ? '/register' : '/login'}
         >
-          {mode === 'login' ? 'Create account' : 'Sign in'}
+          {mode === 'login' ? text('Create account') : text('Sign in')}
           <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </header>
       <section className="access-hero" aria-hidden={active}>
         <p className="access-eyebrow">
           <span />
-          Your finances, in one place
+          {text('Your finances, in one place')}
         </p>
         <h1>
-          Bring your
+          {text('Bring your')}
           <br />
-          money
+          {text('money')}
           <br />
-          <em>together.</em>
+          <em>{text('together.')}</em>
         </h1>
         <p className="access-hero-description">
-          Make sense of every little spend and every bit of income, all in one
-          calm place.
+          {text(
+            'Make sense of every little spend and every bit of income, all in one calm place.',
+          )}
         </p>
-        <button
-          type="button"
-          className="access-get-started"
-          disabled={active}
-          onClick={() => navigate('/register')}
-        >
-          Get started
-          <ArrowRight size={20} aria-hidden="true" />
-        </button>
+        <div className="access-cta-row">
+          <button
+            type="button"
+            className="access-get-started"
+            disabled={active}
+            onClick={() => navigate('/register')}
+          >
+            {text('Get started')}
+            <ArrowRight size={20} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="access-try-demo"
+            disabled={active || demoBusy}
+            onClick={() => {
+              setDemoBusy(true);
+              setDemoError('');
+              void auth
+                .startDemo()
+                .then(() => navigate('/', { replace: true }))
+                .catch(() => {
+                  setDemoError(
+                    'The demo could not be opened. Please try again.',
+                  );
+                  setDemoBusy(false);
+                });
+            }}
+          >
+            {demoBusy ? text('Opening demo…') : text('Try Demo')}
+          </button>
+        </div>
+        {demoError && (
+          <p className="access-demo-error" role="alert">
+            {demoError}
+          </p>
+        )}
         <p className="access-privacy">
-          <LockKeyhole size={15} aria-hidden="true" />A personal space for your
-          financial records
+          <LockKeyhole size={15} aria-hidden="true" />
+          {text('A personal space for your financial records')}
         </p>
       </section>
       <div className="access-receipts" aria-hidden="true">
@@ -167,7 +200,7 @@ export function AccessPage() {
                 <card.icon size={22} strokeWidth={1.7} />
               </span>
               <div className="access-card-copy">
-                <strong>{card.label}</strong>
+                <strong>{text(card.label)}</strong>
                 <small>{card.amount}</small>
               </div>
             </div>
@@ -180,20 +213,22 @@ export function AccessPage() {
         </span>
         <h2>{t('brand')}</h2>
         <p>
-          Your records.
+          {text('Your records.')}
           <br />
-          One clear picture.
+          {text('One clear picture.')}
         </p>
       </section>
       {active ? (
         <section
           className="access-form-panel"
           key={mode}
-          aria-label={mode === 'register' ? 'Create account' : 'Sign in'}
+          aria-label={
+            mode === 'register' ? text('Create account') : text('Sign in')
+          }
         >
           <Link to="/" className="access-back">
             <ArrowLeft size={16} aria-hidden="true" />
-            Back
+            {text('Back')}
           </Link>
           <AuthForm mode={mode} destination={destination} />
         </section>
@@ -204,8 +239,8 @@ export function AccessPage() {
         </p>
       ) : null}
       <footer className="access-footer">
-        <span>Small steps. A clearer picture.</span>
-        <span>Built for everyday money</span>
+        <span>{text('Small steps. A clearer picture.')}</span>
+        <span>{text('Built for everyday money')}</span>
       </footer>
     </main>
   );
@@ -218,6 +253,7 @@ function AuthForm({
   mode: 'register' | 'login';
   destination: string;
 }) {
+  const text = useUiText();
   const auth = useAuth()!;
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -240,7 +276,7 @@ function AuthForm({
     if (submitting) return;
     setError('');
     if (mode === 'register' && password !== confirm) {
-      setError('The passwords do not match.');
+      setError(text('The passwords do not match.'));
       return;
     }
     setSubmitting(true);
@@ -251,7 +287,7 @@ function AuthForm({
       navigate(destination, { replace: true });
     } catch (failure) {
       setError(
-        failure instanceof Error ? failure.message : 'Please try again.',
+        failure instanceof Error ? failure.message : text('Please try again.'),
       );
     } finally {
       setSubmitting(false);
@@ -259,31 +295,35 @@ function AuthForm({
   }
   return (
     <>
-      <p className="access-form-eyebrow">YOUR EVERYDAY MONEY COMPANION</p>
-      <h1>{mode === 'register' ? 'A clearer start.' : 'Welcome back.'}</h1>
+      <p className="access-form-eyebrow">
+        {text('YOUR EVERYDAY MONEY COMPANION')}
+      </p>
+      <h1>
+        {mode === 'register' ? text('A clearer start.') : text('Welcome back.')}
+      </h1>
       <p className="access-form-description">
         {mode === 'register'
-          ? 'Create your account and bring your records together.'
-          : 'Sign in to pick up where you left off.'}
+          ? text('Create your account and bring your records together.')
+          : text('Sign in to pick up where you left off.')}
       </p>
       <form className="access-form" onSubmit={submit}>
         {mode === 'register' ? (
           <label>
-            Your name
+            {text('Your name')}
             <input
               ref={inputRef}
               autoComplete="name"
               value={name}
               maxLength={100}
               onChange={(event) => setName(event.target.value)}
-              placeholder="How should we call you?"
+              placeholder={text('How should we call you?')}
               required
               disabled={submitting}
             />
           </label>
         ) : null}
         <label>
-          Email address
+          {text('Email address')}
           <input
             ref={mode === 'login' ? inputRef : undefined}
             type="email"
@@ -300,7 +340,7 @@ function AuthForm({
           />
         </label>
         <label>
-          Password
+          {text('Password')}
           <div className="access-password-wrap">
             <input
               type={visible ? 'text' : 'password'}
@@ -313,8 +353,8 @@ function AuthForm({
               onChange={(event) => setPassword(event.target.value)}
               placeholder={
                 mode === 'register'
-                  ? 'At least 8 characters'
-                  : 'Enter your password'
+                  ? text('At least 8 characters')
+                  : text('Enter your password')
               }
               aria-describedby={
                 mode === 'register' ? 'password-help' : undefined
@@ -324,7 +364,9 @@ function AuthForm({
             />
             <button
               type="button"
-              aria-label={visible ? 'Hide password' : 'Show password'}
+              aria-label={
+                visible ? text('Hide password') : text('Show password')
+              }
               aria-pressed={visible}
               onClick={() => setVisible((value) => !value)}
             >
@@ -339,17 +381,17 @@ function AuthForm({
         {mode === 'register' ? (
           <>
             <p id="password-help" className="access-password-help">
-              Use at least 8 characters. A longer phrase works well.
+              {text('Use at least 8 characters. A longer phrase works well.')}
             </p>
             <label>
-              Confirm password
+              {text('Confirm password')}
               <input
                 type={visible ? 'text' : 'password'}
                 autoComplete="new-password"
                 maxLength={128}
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
-                placeholder="Enter it once more"
+                placeholder={text('Enter it once more')}
                 required
                 disabled={submitting}
               />
@@ -364,23 +406,25 @@ function AuthForm({
         <button className="access-submit" disabled={submitting}>
           {submitting
             ? mode === 'register'
-              ? 'Creating account…'
-              : 'Signing in…'
+              ? text('Creating account…')
+              : text('Signing in…')
             : mode === 'register'
-              ? 'Create account'
-              : 'Sign in'}
+              ? text('Create account')
+              : text('Sign in')}
           <ArrowRight size={18} aria-hidden="true" />
         </button>
       </form>
       <p className="access-form-switch">
-        {mode === 'register' ? 'Already have an account?' : 'New here?'}{' '}
+        {mode === 'register'
+          ? text('Already have an account?')
+          : text('New here?')}{' '}
         <Link to={mode === 'register' ? '/login' : '/register'}>
-          {mode === 'register' ? 'Sign in' : 'Create an account'}
+          {mode === 'register' ? text('Sign in') : text('Create an account')}
         </Link>
       </p>
       <p className="access-form-privacy">
         <LockKeyhole size={13} aria-hidden="true" />
-        Your account keeps your workspace separate.
+        {text('Your account keeps your workspace separate.')}
       </p>
     </>
   );

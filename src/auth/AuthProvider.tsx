@@ -19,8 +19,24 @@ import {
 import { useDemoStore } from '../store/demoStore';
 import { STORAGE_KEY } from '../store/persistence';
 import { emptyAppData, persistedStoreSchema } from '../domain/types';
+import { createSampleData, DEMO_INSTANT } from '../demo/sampleData';
+import { setDemoClock } from '../services/clock';
+
+const DEMO_FLAG = 'shwe-try-demo';
+const DEMO_STORAGE = `${STORAGE_KEY}:try-demo`;
+const demoWasActive = () => {
+  try {
+    return sessionStorage.getItem(DEMO_FLAG) === '1';
+  } catch {
+    return false;
+  }
+};
 
 interface AuthValue {
+  isDemo: boolean;
+  startDemo(): Promise<void>;
+  exitDemo(): Promise<void>;
+  resetDemo(): void;
   user: AccountUser | null;
   loading: boolean;
   error: string;
@@ -63,6 +79,7 @@ function hasRecords(data: ReturnType<typeof emptyAppData>) {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sync, setSync] = useState<AuthValue['sync']>('saved');
@@ -168,8 +185,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [saveNow],
   );
 
+  const resumeDemo = useCallback(async (fresh = false) => {
+    if (!useDemoStore.persist.hasHydrated())
+      await useDemoStore.persist.rehydrate();
+    clearTimeout(timer.current);
+    userRef.current = null;
+    const cached = fresh ? null : readWorkspace(DEMO_STORAGE);
+    useDemoStore.persist.setOptions({ name: DEMO_STORAGE });
+    setDemoClock(DEMO_INSTANT);
+    useDemoStore.setState({
+      data: cached?.data ?? createSampleData(),
+      timeZone: cached?.timeZone ?? 'Asia/Rangoon',
+      storageNotice: null,
+    });
+    setUser(null);
+    setError('');
+    setCanImport(false);
+    setIsDemo(true);
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
+    if (demoWasActive()) {
+      void Promise.resolve()
+        .then(() => {
+          if (!controller.signal.aborted) return resumeDemo();
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+      return () => controller.abort();
+    }
     void accountRequest(
       'auth/session',
       'GET',
@@ -192,7 +238,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [openWorkspace]);
+  }, [openWorkspace, resumeDemo]);
+
+  async function startDemo() {
+    if (userRef.current) throw new Error('Sign out before starting a demo.');
+    await resumeDemo(true);
+    try {
+      sessionStorage.setItem(DEMO_FLAG, '1');
+      sessionStorage.removeItem('shwe-demo-tour-finished');
+    } catch {
+      /* Demo remains available without persistence. */
+    }
+  }
+  function resetDemo() {
+    if (!isDemo) return;
+    useDemoStore.setState({
+      data: createSampleData(),
+      timeZone: 'Asia/Rangoon',
+      storageNotice: null,
+    });
+  }
+  async function exitDemo() {
+    setLoading(true);
+    try {
+      sessionStorage.removeItem(DEMO_FLAG);
+    } catch {
+      /* In-memory exit still works. */
+    }
+    setDemoClock(null);
+    clearWorkspace();
+    setIsDemo(false);
+    try {
+      const result = await accountRequest(
+        'auth/session',
+        'GET',
+        undefined,
+        sessionSchema,
+      );
+      if (result.user) await openWorkspace(result.user);
+    } catch {
+      /* A guest can leave the demo even when the backend is offline. */
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -291,6 +380,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        isDemo,
+        startDemo,
+        exitDemo,
+        resetDemo,
         loading,
         error,
         sync,

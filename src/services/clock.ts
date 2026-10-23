@@ -4,17 +4,22 @@ export interface Clock {
   now(): Date;
   today(): string;
 }
+let demoInstant: string | null = null;
+export function setDemoClock(instant: string | null) {
+  demoInstant = instant;
+}
+const currentDate = () => (demoInstant ? new Date(demoInstant) : new Date());
 
 export function clockForTimeZone(timeZone: string): Clock {
   return {
-    now: () => new Date(),
+    now: currentDate,
     today: () => {
       const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      }).formatToParts(new Date());
+      }).formatToParts(currentDate());
       const part = (type: string) =>
         parts.find((item) => item.type === type)?.value;
       return `${part('year')}-${part('month')}-${part('day')}`;
@@ -23,14 +28,14 @@ export function clockForTimeZone(timeZone: string): Clock {
 }
 
 export const systemClock: Clock = {
-  now: () => new Date(),
+  now: currentDate,
   today: () => {
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: BUSINESS_TIME_ZONE,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).formatToParts(new Date());
+    }).formatToParts(currentDate());
     const part = (type: string) =>
       parts.find((item) => item.type === type)?.value;
     return `${part('year')}-${part('month')}-${part('day')}`;

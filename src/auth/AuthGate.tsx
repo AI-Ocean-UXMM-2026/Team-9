@@ -3,6 +3,7 @@ import { App } from '../app/App';
 import { AccessPage } from './AccessPage';
 import { BrandMark } from '../components/BrandMark';
 import { useAuth } from './AuthProvider';
+import { DemoExperience } from '../demo/DemoExperience';
 
 export function AuthGate() {
   const auth = useAuth()!;
@@ -15,6 +16,12 @@ export function AuthGate() {
         </span>
         <p>Opening your workspace…</p>
       </main>
+    );
+  if (auth.isDemo)
+    return (
+      <DemoExperience>
+        <App />
+      </DemoExperience>
     );
   if (!auth.user) return <AccessPage />;
   if (['/login', '/register', '/welcome'].includes(location.pathname))

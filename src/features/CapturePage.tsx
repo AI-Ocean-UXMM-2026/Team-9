@@ -1,3 +1,4 @@
+import { AppDatePicker } from '../components/AppDatePicker';
 import { AppSelect } from '../components/AppSelect';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -344,7 +345,7 @@ export function CapturePage() {
             </p>
             {progress.phase === 'reading' ? (
               <progress
-                className="mt-2 h-2 w-full accent-[#0866e8]"
+                className="mt-2 h-2 w-full accent-[#7656c9]"
                 max={1}
                 value={progress.progress}
                 aria-label={t('capture.reading')}
@@ -423,12 +424,12 @@ export function CapturePage() {
             </label>
             <label className="grid gap-2 text-sm font-medium">
               {t('transaction.date')}
-              <input
+              <AppDatePicker
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
                 type="date"
                 value={date}
-                onChange={(event) => {
-                  setDate(event.target.value);
+                onValueChange={(value) => {
+                  setDate(value);
                   setReviewed(false);
                 }}
                 required
@@ -455,13 +456,13 @@ export function CapturePage() {
             {cashStatus === 'pending' ? (
               <label className="grid gap-2 text-sm font-medium">
                 {t('transaction.dueDate')}
-                <input
+                <AppDatePicker
                   className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
                   type="date"
                   min={date}
                   value={dueDate}
-                  onChange={(event) => {
-                    setDueDate(event.target.value);
+                  onValueChange={(value) => {
+                    setDueDate(value);
                     setReviewed(false);
                   }}
                   required

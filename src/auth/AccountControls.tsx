@@ -1,3 +1,4 @@
+import { useUiText } from '../i18n/useUiText';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, UserRound } from 'lucide-react';
@@ -5,6 +6,7 @@ import { useAuth } from './AuthProvider';
 import { AnimatedDisclosure } from '../components/Motion';
 
 export function AccountControls() {
+  const text = useUiText();
   const auth = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -22,17 +24,17 @@ export function AccountControls() {
           {auth.user.name}
           <small>
             {auth.sync === 'saving'
-              ? 'Saving…'
+              ? text('Saving…')
               : auth.sync === 'error'
-                ? 'Sync needs attention'
-                : 'Saved'}
+                ? text('Sync needs attention')
+                : text('Saved')}
           </small>
         </span>
       </Link>
       <button
         type="button"
         className="account-sign-out"
-        aria-label="Sign out"
+        aria-label={text('Sign out')}
         disabled={busy}
         onClick={() => {
           setBusy(true);
@@ -93,6 +95,7 @@ export function AccountNotices() {
 }
 
 export function AccountSettings() {
+  const text = useUiText();
   const auth = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
@@ -105,7 +108,9 @@ export function AccountSettings() {
       !auth ||
       busy ||
       !window.confirm(
-        'Permanently delete your account and its saved financial records? This cannot be undone.',
+        text(
+          'Permanently delete your account and its saved financial records? This cannot be undone.',
+        ),
       )
     )
       return;
@@ -127,21 +132,23 @@ export function AccountSettings() {
   }
   return (
     <section className="surface-card account-settings">
-      <h2>Your account</h2>
+      <h2>{text('Your account')}</h2>
       <p className="account-settings-name">{auth.user.name}</p>
       <p>{auth.user.email}</p>
       <p className="account-storage-help">
-        Your records are saved to your account on this server. Receipt images
-        stay on your device.
+        {text(
+          'Your records are saved to your account on this server. Receipt images stay on your device.',
+        )}
       </p>
-      <AnimatedDisclosure title="Delete account">
+      <AnimatedDisclosure title={text('Delete account')}>
         <form className="account-delete-form" onSubmit={remove}>
           <p>
-            This permanently removes your registered account, sessions and saved
-            records from this server.
+            {text(
+              'This permanently removes your registered account, sessions and saved records from this server.',
+            )}
           </p>
           <label>
-            Current password
+            {text('Current password')}
             <input
               type="password"
               autoComplete="current-password"
@@ -153,7 +160,7 @@ export function AccountSettings() {
           </label>
           {error ? <p role="alert">{error}</p> : null}
           <button type="submit" disabled={busy}>
-            {busy ? 'Deleting…' : 'Delete my account'}
+            {busy ? text('Deleting…') : text('Delete my account')}
           </button>
         </form>
       </AnimatedDisclosure>

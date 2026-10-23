@@ -1,15 +1,37 @@
+import { useUiText } from '../i18n/useUiText';
 import { useState, type FormEvent } from 'react';
 import { UserRound, Mail, ArrowLeft, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 
 export function ProfilePage() {
+  const text = useUiText();
   const auth = useAuth();
+  if (auth?.isDemo)
+    return (
+      <div className="page-stack">
+        <header className="page-heading">
+          <h1>{text('My profile')}</h1>
+        </header>
+        <section className="surface-card profile-card">
+          <h2>{text('Demo business owner')}</h2>
+          <p>
+            {text(
+              'This is a sample workspace. Create an account to save your own profile and financial records.',
+            )}
+          </p>
+          <Link className="profile-back" to="/more">
+            {text('Back to More')}
+          </Link>
+        </section>
+      </div>
+    );
   if (!auth?.user) return null;
   return <ProfileForm key={auth.user.id} />;
 }
 
 function ProfileForm() {
+  const text = useUiText();
   const auth = useAuth()!;
   const [name, setName] = useState(auth.user!.name);
   const [email, setEmail] = useState(auth.user!.email);
@@ -49,10 +71,11 @@ function ProfileForm() {
     <div className="page-stack profile-page">
       <header className="page-heading">
         <Link className="profile-back" to="/more">
-          <ArrowLeft size={17} aria-hidden="true" /> More
+          <ArrowLeft size={17} aria-hidden="true" />
+          {text('More')}
         </Link>
-        <h1 tabIndex={-1}>My profile</h1>
-        <p>Keep your personal information up to date.</p>
+        <h1 tabIndex={-1}>{text('My profile')}</h1>
+        <p>{text('Keep your personal information up to date.')}</p>
       </header>
       <section className="surface-card profile-card">
         <div className="profile-summary">
@@ -71,7 +94,8 @@ function ProfileForm() {
         >
           <label htmlFor="profile-name">
             <span>
-              <UserRound size={17} aria-hidden="true" /> Full name
+              <UserRound size={17} aria-hidden="true" />
+              {text('Full name')}
             </span>
             <input
               id="profile-name"
@@ -86,7 +110,8 @@ function ProfileForm() {
           </label>
           <label htmlFor="profile-email">
             <span>
-              <Mail size={17} aria-hidden="true" /> Email address
+              <Mail size={17} aria-hidden="true" />
+              {text('Email address')}
             </span>
             <input
               id="profile-email"
@@ -102,7 +127,7 @@ function ProfileForm() {
           </label>
           {emailChanged && (
             <label htmlFor="profile-password">
-              <span>Current password</span>
+              <span>{text('Current password')}</span>
               <input
                 id="profile-password"
                 name="currentPassword"
@@ -116,8 +141,9 @@ function ProfileForm() {
                 aria-describedby="profile-email-help"
               />
               <small id="profile-email-help">
-                Confirm your password to change your sign-in email. Other
-                sessions will be signed out.
+                {text(
+                  'Confirm your password to change your sign-in email. Other sessions will be signed out.',
+                )}
               </small>
             </label>
           )}
@@ -128,8 +154,8 @@ function ProfileForm() {
           )}
           {saved && (
             <p className="profile-saved" role="status">
-              <Check size={17} aria-hidden="true" /> Your profile has been
-              saved.
+              <Check size={17} aria-hidden="true" />
+              {text('Your profile has been saved.')}
             </p>
           )}
           <div className="profile-form-actions">
@@ -138,7 +164,7 @@ function ProfileForm() {
               type="submit"
               disabled={busy || !changed}
             >
-              {busy ? 'Saving…' : 'Save changes'}
+              {busy ? text('Saving…') : text('Save changes')}
             </button>
           </div>
         </form>

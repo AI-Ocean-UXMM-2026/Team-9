@@ -1,3 +1,4 @@
+import { AppDatePicker } from '../components/AppDatePicker';
 import { AppSelect } from '../components/AppSelect';
 import { AccountSettings } from '../auth/AccountControls';
 import {
@@ -415,10 +416,11 @@ export function DashboardPage() {
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <article className="rounded-2xl bg-canvas p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">
-        {money(value)} <span className="text-sm font-medium">MMK</span>
+    <article className="movement-metric rounded-2xl bg-canvas p-4">
+      <p className="movement-metric-label text-sm text-muted">{label}</p>
+      <p className="movement-metric-value font-semibold">
+        <span className="movement-metric-number">{money(value)}</span>
+        <span className="movement-metric-currency">MMK</span>
       </p>
     </article>
   );
@@ -464,7 +466,7 @@ function MovementChart({
                 width="22"
                 height={incomeHeight}
                 rx="5"
-                fill="#0866e8"
+                fill="#7656c9"
                 style={{ animationDelay: `${index * 85}ms` }}
               />
               <rect
@@ -560,12 +562,12 @@ export function OpeningBalanceForm() {
       </label>
       <label className="opening-field grid gap-2 text-sm font-medium">
         {t('opening.referenceAt')}
-        <input
+        <AppDatePicker
           className="field-control min-h-12 rounded-xl border border-[#bccbc0] px-4"
           type="datetime-local"
           aria-label={t('opening.referenceAt')}
           value={referenceAt}
-          onChange={(e) => setReferenceAt(e.target.value)}
+          onValueChange={(value) => setReferenceAt(value)}
           required
         />
       </label>
@@ -894,11 +896,11 @@ export function SchedulesPage() {
             {repeat === 'one_time'
               ? t('transaction.dueDate')
               : t('schedules.startDate')}
-            <input
+            <AppDatePicker
               className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
               type="date"
               value={dueDate}
-              onChange={(event) => setDueDate(event.target.value)}
+              onValueChange={(value) => setDueDate(value)}
               required
             />
           </label>
@@ -919,12 +921,12 @@ export function SchedulesPage() {
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 {t('schedules.endDate')}
-                <input
+                <AppDatePicker
                   className="min-h-12 rounded-xl border border-[#bccbc0] px-4"
                   type="date"
                   min={dueDate}
                   value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
+                  onValueChange={(value) => setEndDate(value)}
                 />
               </label>
             </>
@@ -1315,12 +1317,12 @@ export function TransactionsPage() {
           <div className={`composer-primary-fields${cashStatus === 'pending' ? ' composer-fields-pending' : ''}`}>
             <label className="composer-field">
               <span><CalendarDays size={16} aria-hidden="true" />{t('transaction.date')}</span>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+              <AppDatePicker type="date" value={date} onValueChange={(value) => setDate(value)} required />
             </label>
             {cashStatus === 'pending' ? (
               <label className="composer-field composer-due-date">
                 <span><CalendarClock size={16} aria-hidden="true" />{t('transaction.dueDate')}</span>
-                <input type="date" min={date} value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
+                <AppDatePicker type="date" min={date} value={dueDate} onValueChange={(value) => setDueDate(value)} required />
               </label>
             ) : null}
             <fieldset className="composer-field composer-status-field">
@@ -1417,12 +1419,12 @@ export function TransactionsPage() {
               <option value="custom">{t('transactions.customRange')}</option>
             </AppSelect>
           </label>
-          {dateFilter === 'month' ? <label className="activity-date-input"><span className="sr-only">{t('transactions.specificMonth')}</span><input type="month" value={filterMonth} onChange={(event) => setFilterMonth(event.target.value)} /></label> : null}
+          {dateFilter === 'month' ? <label className="activity-date-input"><span className="sr-only">{t('transactions.specificMonth')}</span><AppDatePicker type="month" value={filterMonth} onValueChange={(value) => setFilterMonth(value)} /></label> : null}
           {dateFilter === 'custom' ? (
             <div className="activity-custom-range">
-              <label><span className="sr-only">{t('transactions.fromDate')}</span><input type="date" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} /></label>
+              <label><span className="sr-only">{t('transactions.fromDate')}</span><AppDatePicker type="date" value={rangeStart} onValueChange={(value) => setRangeStart(value)} /></label>
               <span aria-hidden="true">–</span>
-              <label><span className="sr-only">{t('transactions.toDate')}</span><input type="date" min={rangeStart || undefined} value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} /></label>
+              <label><span className="sr-only">{t('transactions.toDate')}</span><AppDatePicker type="date" min={rangeStart || undefined} value={rangeEnd} onValueChange={(value) => setRangeEnd(value)} /></label>
             </div>
           ) : null}
           <label className="activity-type-filter">

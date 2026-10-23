@@ -39,6 +39,8 @@ import { PaymentsLayout } from '../features/PaymentsLayout';
 import { SlidingSelector } from '../components/SlidingSelector';
 import { RouteFade, useAnimatedVisibility } from '../components/Motion';
 import { BrandMark } from '../components/BrandMark';
+import { useDemoTour } from '../demo/DemoExperience';
+import { LanguageSelect } from '../components/LanguageSelect';
 
 function routeName(pathname: string, t: TFunction) {
   if (
@@ -66,7 +68,9 @@ export function App() {
   const drawerRef = useRef<HTMLElement>(null);
   const quickAddRef = useRef<HTMLElement>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const demoTour = useDemoTour();
+  const [manualQuickAddOpen, setQuickAddOpen] = useState(false);
+  const quickAddOpen = demoTour.active ? demoTour.menuOpen : manualQuickAddOpen;
   const [overlayPath, setOverlayPath] = useState(location.pathname);
   if (overlayPath !== location.pathname) {
     setOverlayPath(location.pathname);
@@ -118,7 +122,7 @@ export function App() {
   }, [mobileDrawerOpen]);
 
   useEffect(() => {
-    if (!quickAddOpen) return;
+    if (!quickAddOpen || demoTour.active) return;
     const dialog = quickAddRef.current;
     dialog?.querySelector<HTMLElement>('a[href]')?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
@@ -142,7 +146,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [quickAddOpen]);
+  }, [quickAddOpen, demoTour.active]);
 
   useEffect(() => {
     const process = () => useDemoStore.getState().processDueSchedules();
@@ -179,11 +183,10 @@ export function App() {
       <AccountNotices />
       <div className="app-frame">
         <aside id="app-navigation" className="app-sidebar">
-          <Link to="/" className="brand-lockup">
+          <Link to="/" className="brand-lockup" aria-label={t('brand')}>
             <span className="brand-symbol">
               <BrandMark className="size-7" />
             </span>
-            <span className="brand-name">{t('brand')}</span>
           </Link>
           <div className="sidebar-caption">{t('navigation')}</div>
           <SlidingSelector
@@ -263,12 +266,12 @@ export function App() {
                 <Link
                   to="/"
                   className="brand-lockup"
+                  aria-label={t('brand')}
                   onClick={() => setMobileDrawerOpen(false)}
                 >
                   <span className="brand-symbol">
                     <BrandMark className="size-6" />
                   </span>
-                  <span className="brand-name">{t('brand')}</span>
                 </Link>
                 <button
                   type="button"
@@ -335,12 +338,16 @@ export function App() {
             >
               <Menu size={21} aria-hidden="true" />
             </button>
-            <Link to="/" className="mobile-brand lg:hidden">
+            <Link
+              to="/"
+              className="mobile-brand lg:hidden"
+              aria-label={t('brand')}
+            >
               <span className="brand-symbol">
                 <BrandMark className="size-6" />
               </span>
-              <span>{t('brand')}</span>
             </Link>
+            <LanguageSelect />
             <div className="topbar-actions">
               <AccountControls />
             </div>
@@ -485,13 +492,19 @@ export function App() {
                 data-state={quickAddOpen ? 'open' : 'closed'}
                 aria-hidden={!quickAddOpen}
                 role="dialog"
-                aria-modal="true"
+                aria-modal={demoTour.active ? undefined : true}
                 aria-label={t('quickAdd.title')}
               >
                 <Link
                   to="/transactions/new"
                   className="quick-add-option"
-                  onClick={() => setQuickAddOpen(false)}
+                  data-demo-action="transaction"
+                  onClick={(event) => {
+                    if (demoTour.active) {
+                      event.preventDefault();
+                      demoTour.advance();
+                    } else setQuickAddOpen(false);
+                  }}
                 >
                   <span className="quick-add-icon">
                     <ArrowLeftRight size={20} aria-hidden="true" />
@@ -504,7 +517,13 @@ export function App() {
                 <Link
                   to="/budget"
                   className="quick-add-option"
-                  onClick={() => setQuickAddOpen(false)}
+                  data-demo-action="budget"
+                  onClick={(event) => {
+                    if (demoTour.active) {
+                      event.preventDefault();
+                      demoTour.advance();
+                    } else setQuickAddOpen(false);
+                  }}
                 >
                   <span className="quick-add-icon">
                     <CircleDollarSign size={20} aria-hidden="true" />
@@ -517,7 +536,13 @@ export function App() {
                 <Link
                   to="/capture"
                   className="quick-add-option"
-                  onClick={() => setQuickAddOpen(false)}
+                  data-demo-action="receipt"
+                  onClick={(event) => {
+                    if (demoTour.active) {
+                      event.preventDefault();
+                      demoTour.advance();
+                    } else setQuickAddOpen(false);
+                  }}
                 >
                   <span className="quick-add-icon">
                     <Upload size={20} aria-hidden="true" />
@@ -537,7 +562,11 @@ export function App() {
             data-open={quickAddOpen}
             aria-label={quickAddOpen ? t('close') : t('quickAdd.open')}
             aria-expanded={quickAddOpen}
-            onClick={() => setQuickAddOpen((open) => !open)}
+            onClick={() =>
+              demoTour.active
+                ? demoTour.advance()
+                : setQuickAddOpen((open) => !open)
+            }
           >
             <Plus size={27} aria-hidden="true" />
           </button>
