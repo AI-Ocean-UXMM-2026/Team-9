@@ -2700,8 +2700,8 @@ html[lang=my] .movement-metric-label { flex-basis:110px; }
 .mobile-brand .brand-symbol,
 .access-brand-link > span,
 .account-loading > span {
-  width: 44px;
-  height: 64px;
+  width: 32px;
+  height: 48px;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -2714,7 +2714,7 @@ html[lang=my] .movement-metric-label { flex-basis:110px; }
   box-shadow: none;
 }
 @media (min-width: 1024px) {
-  .app-sidebar > .brand-lockup .brand-symbol { width: 56px; height: 84px; }
+  .app-sidebar > .brand-lockup .brand-symbol { width: 40px; height: 60px; }
 }
 @media (max-width: 760px) {
   .access-logo-reveal { flex: 0 0 44px; width: 44px; height: 64px; }
