@@ -50,34 +50,39 @@ function displacementMap(width: number, height: number) {
   return canvas.toDataURL();
 }
 
-/** Tuck the reflected bottom strip into the rim without remapping the main lens. */
-function bottomReflectionMap(width: number, height: number) {
+/** Tuck the reflected bottom and right strips into the rim. */
+function edgeReflectionMap(width: number, height: number) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext('2d');
   if (!context) return '';
   const image = context.createImageData(width, height);
-  const edge = 8;
   const reflection = refractionScale / 2;
-  const zone = Math.min(refractionScale, height / 2);
-  const start = height - zone;
-  const crest = height - edge;
-  for (let y = 0; y < height; y += 1) {
-    let shift = 0;
-    if (y > start && y <= crest) {
-      const t = (y - start) / (crest - start);
-      shift = -(reflection - edge) * Math.sin((t * Math.PI) / 2) ** 2;
-    } else if (y > crest) {
-      const t = (y - crest) / edge;
-      shift = -(reflection - edge) * (1 - t * t * (3 - 2 * t));
+  const shiftToRim = (position: number, extent: number, edge: number) => {
+    const start = extent - Math.min(refractionScale, extent / 2);
+    const crest = extent - edge;
+    if (position > start && position <= crest) {
+      const t = (position - start) / (crest - start);
+      return -(reflection - edge) * Math.sin((t * Math.PI) / 2) ** 2;
     }
+    if (position > crest) {
+      const t = (position - crest) / edge;
+      return -(reflection - edge) * (1 - t * t * (3 - 2 * t));
+    }
+    return 0;
+  };
+  const encode = (shift: number) =>
+    Math.round(127.5 + (shift / refractionScale) * 255);
+  const horizontal = Array.from({ length: width }, (_, x) =>
+    encode(shiftToRim(x, width, 3)),
+  );
+  for (let y = 0; y < height; y += 1) {
+    const vertical = encode(shiftToRim(y, height, 5));
     for (let x = 0; x < width; x += 1) {
       const offset = (y * width + x) * 4;
-      image.data[offset] = 128;
-      image.data[offset + 1] = Math.round(
-        127.5 + (shift / refractionScale) * 255,
-      );
+      image.data[offset] = horizontal[x];
+      image.data[offset + 1] = vertical;
       image.data[offset + 2] = 128;
       image.data[offset + 3] = 255;
     }
@@ -119,7 +124,7 @@ export function LiquidGlassLens() {
   const reflectionMap = useMemo(
     () =>
       size.width && size.height
-        ? bottomReflectionMap(size.width, size.height)
+        ? edgeReflectionMap(size.width, size.height)
         : '',
     [size.width, size.height],
   );
