@@ -2,6 +2,11 @@
 
 A local financial records app for everyday bookkeeping in Myanmar. It provides income and expense records, one-time and monthly schedules, payment confirmation, budgets, forecasts and bank-specific Credit Readiness checklists. Receipt text recognition runs on the device in English and Burmese using Tesseract.js; every extracted record requires user review. Ask AI remains a demo interface using local record rules; there is no external AI API connection. Registration and sign-in use a Node backend and SQLite database with hashed passwords and cookie sessions. Financial records are saved per account, with a separate browser cache for each user.
 
+## Hackathon submission
+
+- [Demo video (MP4)](Video_and_Slide/video.mp4)
+- [Presentation slides (PDF)](Video_and_Slide/Deck.pdf)
+
 ## Credit readiness
 
 Choose **A Bank**, **Yoma Bank** or **MCB Bank** under More → Credit readiness. Each bank has six document preparation groups with independent saved status. Financial coverage updates from saved settled records; pending, future and assumed unconfirmed payments are excluded. Each group contributes equally to preparation progress. Document availability is self-reported, while supporting financial summaries use month coverage (12 months for A Bank/Yoma, 36 for MCB). Coverage indicates months containing records, not proof that accounts are complete.
