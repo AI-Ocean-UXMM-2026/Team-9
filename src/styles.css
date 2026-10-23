@@ -2783,3 +2783,10 @@ html[lang=my] .movement-metric-label { flex-basis:110px; }
   }
   .access-stage[data-view=auth] .access-footer { grid-row: 4; }
 }
+
+/* Keep the spotlight mounted while its opening moves between tour targets. */
+.demo-tour-outline { transition: opacity 180ms ease; }
+.demo-tour-shade { transition: opacity 280ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .demo-tour-outline, .demo-tour-shade { transition: none; }
+}

@@ -272,14 +272,59 @@ function TourSpotlight({
 }) {
   const text = useUiText();
   const [rect, setRect] = useState<Rect | null>(null);
+  const outline = useRef<HTMLDivElement>(null);
+  const spotlightMotion = useRef<Animation | null>(null);
   const caption = useRef<HTMLElement>(null);
   const targetRef = useRef<HTMLElement | null>(null);
+  useEffect(() => () => spotlightMotion.current?.cancel(), []);
   useEffect(() => {
     let stopped = false,
       frame = 0,
       attempt = 0,
       timeout: ReturnType<typeof setTimeout>;
     let observer: ResizeObserver | undefined;
+    let ready = false;
+    let firstMeasurement = true;
+    const updateSpotlight = (next: Rect | null) => {
+      const node = outline.current;
+      if (firstMeasurement && node) {
+        firstMeasurement = false;
+        // Read the visible position before interrupting an earlier transition.
+        // The same outline survives route changes and rapid Back/Next presses.
+        const from = node.getBoundingClientRect();
+        const fromRadius = getComputedStyle(node).borderRadius;
+        spotlightMotion.current?.cancel();
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const to = next ?? {
+            left: 0,
+            top: 0,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            radii: [0, 0, 0, 0],
+          };
+          spotlightMotion.current = node.animate(
+            [
+              {
+                left: `${from.left}px`,
+                top: `${from.top}px`,
+                width: `${from.width}px`,
+                height: `${from.height}px`,
+                borderRadius: fromRadius,
+              },
+              {
+                left: `${to.left}px`,
+                top: `${to.top}px`,
+                width: `${to.width}px`,
+                height: `${to.height}px`,
+                borderRadius: to.radii.map((radius) => `${radius}px`).join(' '),
+              },
+            ],
+            { duration: 560, easing: 'cubic-bezier(.22,.75,.18,1)' },
+          );
+        }
+      }
+      setRect(next);
+    };
     let placement: 'center' | 'top' | 'bottom' = 'center';
     const positionCaption = (target: DOMRect | null) => {
       const card = caption.current;
@@ -314,10 +359,10 @@ function TourSpotlight({
       muted: string | null;
     }[] = [];
     const measure = () => {
-      if (stopped) return;
+      if (stopped || !ready) return;
       const target = targetRef.current;
       if (!target || !target.isConnected) {
-        setRect(null);
+        updateSpotlight(null);
         positionCaption(null);
         return;
       }
@@ -335,7 +380,7 @@ function TourSpotlight({
             ? (parseFloat(value) / 100) * Math.min(r.width, r.height)
             : parseFloat(value) || 0,
         ) + pad;
-      setRect({
+      updateSpotlight({
         left,
         top,
         width: Math.max(0, Math.min(innerWidth - 6, r.right + pad) - left),
@@ -384,7 +429,13 @@ function TourSpotlight({
       caption.current
         ?.querySelector<HTMLButtonElement>('[data-tour-next]')
         ?.focus({ preventScroll: true });
-      frame = requestAnimationFrame(measure);
+      // Let navigation and its instant scroll settle before choosing the endpoint.
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
+          ready = true;
+          measure();
+        });
+      });
       observer = new ResizeObserver(measure);
       if (target) observer.observe(target);
       if (caption.current) observer.observe(caption.current);
@@ -392,8 +443,13 @@ function TourSpotlight({
       timeout = setTimeout(measure, 350);
     };
     frame = requestAnimationFrame(locate);
-    window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
+    const trackViewport = () => {
+      // Follow a gesture directly; do not let the opening lag behind its target.
+      spotlightMotion.current?.cancel();
+      measure();
+    };
+    window.addEventListener('resize', trackViewport);
+    window.addEventListener('scroll', trackViewport, true);
     const keys = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -445,8 +501,8 @@ function TourSpotlight({
       cancelAnimationFrame(frame);
       clearTimeout(timeout);
       observer?.disconnect();
-      window.removeEventListener('resize', measure);
-      window.removeEventListener('scroll', measure, true);
+      window.removeEventListener('resize', trackViewport);
+      window.removeEventListener('scroll', trackViewport, true);
       window.removeEventListener('keydown', keys, true);
       inertNodes.forEach(({ node, before, muted }) => {
         node.inert = before;
@@ -457,20 +513,30 @@ function TourSpotlight({
   }, [step, finish]);
   return createPortal(
     <div className="demo-tour-layer">
-      {!rect && <div className="demo-tour-shade" style={{ inset: 0 }} />}
-      {rect && (
-        <div
-          className="demo-tour-outline"
-          style={{
-            left: rect.left,
-            top: rect.top,
-            width: rect.width,
-            height: rect.height,
-            borderRadius: rect.radii.map((radius) => `${radius}px`).join(' '),
-          }}
-          aria-hidden="true"
-        />
-      )}
+      <div
+        className="demo-tour-shade"
+        style={{
+          inset: 0,
+          opacity: rect ? 0 : 1,
+          pointerEvents: rect ? 'none' : 'auto',
+        }}
+        aria-hidden="true"
+      />
+      <div
+        ref={outline}
+        className="demo-tour-outline"
+        style={{
+          left: rect?.left ?? 0,
+          top: rect?.top ?? 0,
+          width: rect?.width ?? '100vw',
+          height: rect?.height ?? '100dvh',
+          borderRadius: rect
+            ? rect.radii.map((radius) => `${radius}px`).join(' ')
+            : 0,
+          opacity: rect ? 1 : 0,
+        }}
+        aria-hidden="true"
+      />
       <section
         ref={caption}
         className="demo-tour-caption"
