@@ -50,6 +50,42 @@ function displacementMap(width: number, height: number) {
   return canvas.toDataURL();
 }
 
+/** Tuck the reflected bottom strip into the rim without remapping the main lens. */
+function bottomReflectionMap(width: number, height: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return '';
+  const image = context.createImageData(width, height);
+  const edge = 8;
+  const reflection = refractionScale / 2;
+  const zone = Math.min(refractionScale, height / 2);
+  const start = height - zone;
+  const crest = height - edge;
+  for (let y = 0; y < height; y += 1) {
+    let shift = 0;
+    if (y > start && y <= crest) {
+      const t = (y - start) / (crest - start);
+      shift = -(reflection - edge) * Math.sin((t * Math.PI) / 2) ** 2;
+    } else if (y > crest) {
+      const t = (y - crest) / edge;
+      shift = -(reflection - edge) * (1 - t * t * (3 - 2 * t));
+    }
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      image.data[offset] = 128;
+      image.data[offset + 1] = Math.round(
+        127.5 + (shift / refractionScale) * 255,
+      );
+      image.data[offset + 2] = 128;
+      image.data[offset + 3] = 255;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  return canvas.toDataURL();
+}
+
 export function LiquidGlassLens() {
   const id = `glass-lens-${useId().replace(/:/g, '')}`;
   const surface = useRef<HTMLSpanElement>(null);
@@ -80,6 +116,13 @@ export function LiquidGlassLens() {
       size.width && size.height ? displacementMap(size.width, size.height) : '',
     [size.width, size.height],
   );
+  const reflectionMap = useMemo(
+    () =>
+      size.width && size.height
+        ? bottomReflectionMap(size.width, size.height)
+        : '',
+    [size.width, size.height],
+  );
   return (
     <>
       <svg
@@ -108,6 +151,23 @@ export function LiquidGlassLens() {
             <feDisplacementMap
               in="SourceGraphic"
               in2="lens-map"
+              scale={refractionScale}
+              xChannelSelector="R"
+              yChannelSelector="G"
+              result="glass-base"
+            />
+            <feImage
+              href={reflectionMap || undefined}
+              x="0"
+              y="0"
+              width={size.width}
+              height={size.height}
+              preserveAspectRatio="none"
+              result="reflection-map"
+            />
+            <feDisplacementMap
+              in="glass-base"
+              in2="reflection-map"
               scale={refractionScale}
               xChannelSelector="R"
               yChannelSelector="G"
