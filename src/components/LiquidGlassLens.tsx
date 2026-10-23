@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
-/** A smooth rounded lens, with distortion confined to the outer glass rim. */
+const refractionScale = 80;
+
+/** A convex droplet lens across the surface, with a tighter rounded meniscus. */
 function displacementMap(width: number, height: number) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -10,6 +12,8 @@ function displacementMap(width: number, height: number) {
   const image = context.createImageData(width, height);
   const radius = Math.min(24, width / 2, height / 2);
   const rim = 18;
+  const encode = (displacement: number) =>
+    Math.round(127.5 + (displacement / refractionScale) * 255);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const px = x + 0.5 - width / 2;
@@ -26,9 +30,18 @@ function displacementMap(width: number, height: number) {
       } else if (qx > qy) nx = Math.sign(px);
       else ny = Math.sign(py);
       const bend = Math.pow(Math.max(0, 1 - Math.max(0, distance) / rim), 2);
+      const u = px / (width / 2);
+      const v = py / (height / 2);
+      // A broad convex surface pulls sampling points toward the optical center.
+      // Its changing slope magnifies and bends objects throughout the interior;
+      // the displacement is zero only at the exact center, as in a real lens.
+      const dome = Math.max(0, 1 - u * u) * Math.max(0, 1 - v * v);
+      const bodyBend = 0.34 * dome;
+      const dx = -px * bodyBend - nx * bend * 13;
+      const dy = -py * bodyBend - ny * bend * 13;
       const offset = (y * width + x) * 4;
-      image.data[offset] = Math.round(128 - nx * bend * 110);
-      image.data[offset + 1] = Math.round(128 - ny * bend * 110);
+      image.data[offset] = encode(dx);
+      image.data[offset + 1] = encode(dy);
       image.data[offset + 2] = 128;
       image.data[offset + 3] = 255;
     }
@@ -95,7 +108,7 @@ export function LiquidGlassLens() {
             <feDisplacementMap
               in="SourceGraphic"
               in2="lens-map"
-              scale="30"
+              scale={refractionScale}
               xChannelSelector="R"
               yChannelSelector="G"
             />

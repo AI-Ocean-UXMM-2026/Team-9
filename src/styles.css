@@ -2602,7 +2602,7 @@ body:has(.transaction-composer-page) .quick-add-backdrop { display: none !import
 .demo-tour-caption > .glass-lens-definitions { position:absolute; width:0; height:0; overflow:hidden; pointer-events:none; }
 .demo-tour-caption > .liquid-glass-lens { position:absolute; z-index:0; inset:0; border-radius:inherit; pointer-events:none; background:linear-gradient(135deg,rgb(255 255 255 / .16),rgb(228 237 244 / .05)),rgb(174 190 203 / .22); backdrop-filter:blur(8px) saturate(.9) brightness(1.08); -webkit-backdrop-filter:blur(8px) saturate(.9) brightness(1.08); }
 @supports (backdrop-filter:url('#glass-lens')) {
-  .demo-tour-caption > .liquid-glass-lens { backdrop-filter:blur(4px) saturate(.9) brightness(1.08) var(--glass-refraction,blur(0px)); -webkit-backdrop-filter:blur(4px) saturate(.9) brightness(1.08) var(--glass-refraction,blur(0px)); }
+  .demo-tour-caption > .liquid-glass-lens { backdrop-filter:blur(2.5px) saturate(.9) brightness(1.08) var(--glass-refraction,blur(0px)); -webkit-backdrop-filter:blur(2.5px) saturate(.9) brightness(1.08) var(--glass-refraction,blur(0px)); }
 }
 .demo-tour-caption :is(h2,p,.demo-tour-progress) { text-shadow:none; }
 .demo-tour-progress { display:flex; align-items:center; justify-content:space-between; margin-bottom:13px; color:var(--tour-text); font-size:.75rem; font-weight:600; }
