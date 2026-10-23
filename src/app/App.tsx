@@ -1,12 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom';
 import type { TFunction } from 'i18next';
-import { ArrowLeftRight, CircleDollarSign, FlaskConical, Menu, Plus, Upload, X } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  CircleDollarSign,
+  FlaskConical,
+  Menu,
+  Plus,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { primaryDestinations, screens, utilityDestinations } from './routes';
 import { Placeholder } from '../features/Placeholder';
 import { CapturePage } from '../features/CapturePage';
-import { ChatPage, ForecastPage, OwedPage } from '../features/AnalysisPages';
+import { ForecastPage, OwedPage } from '../features/AnalysisPages';
 import { ReadinessPage } from '../features/ReadinessPage';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useDemoStore } from '../store/demoStore';
@@ -18,22 +33,22 @@ import {
   TransactionsPage,
 } from '../features/FinancialPages';
 import { MorePage } from '../features/MorePage';
-
-function ScrollMark({ className = '' }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 40 40" fill="none" className={className}>
-      <path
-        d="M11 9.5h18a3.5 3.5 0 0 1 0 7H14.5a3.5 3.5 0 0 0 0 7H29a3.5 3.5 0 0 1 0 7H11a3.5 3.5 0 0 1 0-7h14.5a3.5 3.5 0 0 0 0-7H11a3.5 3.5 0 0 1 0-7Z"
-        stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
-      />
-      <path d="M8 13V27" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { FutureAIPage } from '../features/FutureAIPage';
+import { AccountControls, AccountNotices } from '../auth/AccountControls';
+import { PaymentsLayout } from '../features/PaymentsLayout';
+import { SlidingSelector } from '../components/SlidingSelector';
+import { RouteFade, useAnimatedVisibility } from '../components/Motion';
+import { BrandMark } from '../components/BrandMark';
 
 function routeName(pathname: string, t: TFunction) {
-  if (pathname.startsWith('/payments') || pathname === '/schedules' || pathname === '/owed') return t('payments.nav');
+  if (
+    pathname.startsWith('/payments') ||
+    pathname === '/schedules' ||
+    pathname === '/owed'
+  )
+    return t('payments.nav');
   if (pathname.startsWith('/transactions/')) return t('transactions.nav');
+  if (pathname === '/chat') return t('chat.nav');
   if (pathname === '/budget') return t('budget.title');
   if (pathname === '/more') return t('more.nav');
   const screen = screens.find((item) => item.path === pathname);
@@ -51,7 +66,20 @@ export function App() {
   const quickAddRef = useRef<HTMLElement>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [overlayPath, setOverlayPath] = useState(location.pathname);
+  if (overlayPath !== location.pathname) {
+    setOverlayPath(location.pathname);
+    setMobileDrawerOpen(false);
+    setQuickAddOpen(false);
+  }
+  const drawerPresent = useAnimatedVisibility(mobileDrawerOpen, 220);
+  const quickAddPresent = useAnimatedVisibility(quickAddOpen, 180);
   const isComposer = location.pathname === '/transactions/new';
+
+  useEffect(() => {
+    if (drawerRef.current) drawerRef.current.inert = !mobileDrawerOpen;
+    if (quickAddRef.current) quickAddRef.current.inert = !quickAddOpen;
+  }, [mobileDrawerOpen, quickAddOpen, drawerPresent, quickAddPresent]);
 
   useEffect(() => {
     if (previousPath.current !== location.pathname) {
@@ -60,11 +88,6 @@ export function App() {
     }
     document.title = `${routeName(location.pathname, t)} · ${t('brand')}`;
   }, [location.pathname, t]);
-
-  useEffect(() => {
-    setMobileDrawerOpen(false);
-    setQuickAddOpen(false);
-  }, [location.pathname]);
 
   useEffect(() => {
     if (!mobileDrawerOpen) return;
@@ -76,9 +99,9 @@ export function App() {
         menuButtonRef.current?.focus();
       }
       if (event.key !== 'Tab' || !drawer) return;
-      const focusable = Array.from(drawer.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled])',
-      ));
+      const focusable = Array.from(
+        drawer.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+      );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) {
@@ -103,7 +126,9 @@ export function App() {
         quickAddButtonRef.current?.focus();
       }
       if (event.key !== 'Tab' || !dialog) return;
-      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'));
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+      );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (event.shiftKey && document.activeElement === first) {
@@ -129,49 +154,94 @@ export function App() {
 
   return (
     <>
-      <a className="skip-link" href="#main" onClick={(event) => {
-        event.preventDefault();
-        document.getElementById('main')?.focus();
-      }}>{t('skip')}</a>
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('main')?.focus();
+        }}
+      >
+        {t('skip')}
+      </a>
       {storageNotice ? (
         <div className="storage-notice" role="status">
           <span>{storageNotice}</span>
-          <button className="pill-button pill-button-quiet" onClick={() => useDemoStore.getState().dismissStorageNotice()}>
+          <button
+            className="pill-button pill-button-quiet"
+            onClick={() => useDemoStore.getState().dismissStorageNotice()}
+          >
             {t('dismiss')}
           </button>
         </div>
       ) : null}
+      <AccountNotices />
       <div className="app-frame">
         <aside id="app-navigation" className="app-sidebar">
           <Link to="/" className="brand-lockup">
-            <span className="brand-symbol"><ScrollMark className="size-7" /></span>
+            <span className="brand-symbol">
+              <BrandMark className="size-7" />
+            </span>
             <span className="brand-name">{t('brand')}</span>
           </Link>
           <div className="sidebar-caption">{t('navigation')}</div>
-          <nav aria-label={t('navigation')} className="primary-navigation">
-            {primaryDestinations.filter((item) => item.id !== 'more').map(({ id, path, icon: Icon }) => (
-              <NavLink key={id} to={path} end={path === '/'} className={({ isActive }) => `navigation-link${isActive ? ' navigation-link-active' : ''}`}>
-                <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
-                <span>{t(`${id}.nav`)}</span>
-              </NavLink>
-            ))}
-          </nav>
-          <Link className="sidebar-caption sidebar-caption-secondary sidebar-more-link" to="/more">{t('more.nav')}</Link>
-          <nav aria-label={t('more.nav')} className="primary-navigation">
+          <SlidingSelector
+            as="nav"
+            aria-label={t('navigation')}
+            className="primary-navigation"
+            selectionKey={location.pathname}
+          >
+            {primaryDestinations
+              .filter((item) => item.id !== 'more')
+              .map(({ id, path, icon: Icon }) => (
+                <NavLink
+                  key={id}
+                  to={path}
+                  end={path === '/'}
+                  className={({ isActive }) =>
+                    `navigation-link${isActive ? ' navigation-link-active' : ''}`
+                  }
+                >
+                  <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                  <span>{t(`${id}.nav`)}</span>
+                </NavLink>
+              ))}
+          </SlidingSelector>
+          <Link
+            className="sidebar-caption sidebar-caption-secondary sidebar-more-link"
+            to="/more"
+          >
+            {t('more.nav')}
+          </Link>
+          <SlidingSelector
+            as="nav"
+            aria-label={t('more.nav')}
+            className="primary-navigation"
+            selectionKey={location.pathname}
+          >
             {utilityDestinations.map(({ id, path, icon: Icon }) => (
-              <NavLink key={id} to={path} className={({ isActive }) => `navigation-link${isActive ? ' navigation-link-active' : ''}`}>
+              <NavLink
+                key={id}
+                to={path}
+                className={({ isActive }) =>
+                  `navigation-link${isActive ? ' navigation-link-active' : ''}`
+                }
+              >
                 <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
                 <span>{t(`${id}.nav`)}</span>
               </NavLink>
             ))}
-          </nav>
+          </SlidingSelector>
         </aside>
 
-        {mobileDrawerOpen ? (
+        {drawerPresent ? (
           <>
             <button
               type="button"
               className="mobile-drawer-backdrop"
+              data-state={mobileDrawerOpen ? 'open' : 'closed'}
+              aria-hidden={!mobileDrawerOpen}
+              disabled={!mobileDrawerOpen}
               aria-label={t('close')}
               onClick={() => {
                 setMobileDrawerOpen(false);
@@ -182,13 +252,21 @@ export function App() {
               ref={drawerRef}
               id="mobile-drawer"
               className="mobile-drawer"
+              data-state={mobileDrawerOpen ? 'open' : 'closed'}
+              aria-hidden={!mobileDrawerOpen}
               role="dialog"
               aria-modal="true"
               aria-label={t('navigation')}
             >
               <div className="mobile-drawer-header">
-                <Link to="/" className="brand-lockup" onClick={() => setMobileDrawerOpen(false)}>
-                  <span className="brand-symbol"><ScrollMark className="size-6" /></span>
+                <Link
+                  to="/"
+                  className="brand-lockup"
+                  onClick={() => setMobileDrawerOpen(false)}
+                >
+                  <span className="brand-symbol">
+                    <BrandMark className="size-6" />
+                  </span>
                   <span className="brand-name">{t('brand')}</span>
                 </Link>
                 <button
@@ -205,18 +283,22 @@ export function App() {
                 </button>
               </div>
               <nav aria-label={t('navigation')} className="drawer-navigation">
-                {primaryDestinations.map(({ id, path, icon: Icon }) => (
-                  <NavLink
-                    key={id}
-                    to={path}
-                    end={path === '/'}
-                    onClick={() => setMobileDrawerOpen(false)}
-                    className={({ isActive }) => `drawer-link${isActive || (id === 'payments' && location.pathname.startsWith('/payments')) ? ' drawer-link-active' : ''}`}
-                  >
-                    <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
-                    <span>{t(`${id}.nav`)}</span>
-                  </NavLink>
-                ))}
+                {primaryDestinations
+                  .filter((item) => item.id !== 'more')
+                  .map(({ id, path, icon: Icon }) => (
+                    <NavLink
+                      key={id}
+                      to={path}
+                      end={path === '/'}
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className={({ isActive }) =>
+                        `drawer-link${isActive || (id === 'payments' && location.pathname.startsWith('/payments')) ? ' drawer-link-active' : ''}`
+                      }
+                    >
+                      <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                      <span>{t(`${id}.nav`)}</span>
+                    </NavLink>
+                  ))}
               </nav>
               <div className="drawer-section-label">{t('more.nav')}</div>
               <nav aria-label={t('more.nav')} className="drawer-navigation">
@@ -225,7 +307,9 @@ export function App() {
                     key={id}
                     to={path}
                     onClick={() => setMobileDrawerOpen(false)}
-                    className={({ isActive }) => `drawer-link${isActive ? ' drawer-link-active' : ''}`}
+                    className={({ isActive }) =>
+                      `drawer-link${isActive ? ' drawer-link-active' : ''}`
+                    }
                   >
                     <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
                     <span>{t(`${id}.nav`)}</span>
@@ -251,80 +335,202 @@ export function App() {
               <Menu size={21} aria-hidden="true" />
             </button>
             <Link to="/" className="mobile-brand lg:hidden">
-              <span className="brand-symbol"><ScrollMark className="size-6" /></span>
+              <span className="brand-symbol">
+                <BrandMark className="size-6" />
+              </span>
               <span>{t('brand')}</span>
             </Link>
             <div className="topbar-actions">
-              <span className="demo-badge" title={t('demo')} aria-label={t('demo')}>
-                <FlaskConical size={14} aria-hidden="true" />{t('demoMode', { defaultValue: 'Synthetic data' })}
+              <AccountControls />
+              <span
+                className="demo-badge"
+                title={t('demo')}
+                aria-label={t('demo')}
+              >
+                <FlaskConical size={14} aria-hidden="true" />
+                {t('demoMode', { defaultValue: 'Synthetic data' })}
               </span>
             </div>
           </header>
           <main id="main" tabIndex={-1} className="page-content">
-            <ErrorBoundary key={location.pathname}>
-              <Routes>
-                <Route path="/transactions/new" element={<TransactionsPage />} />
-                {screens.filter(({ id }) => id !== 'schedules' && id !== 'owed').map(({ id, path }) => (
-                  <Route key={id} path={path} element={
-                    id === 'dashboard' ? <DashboardPage />
-                      : id === 'transactions' ? <TransactionsPage />
-                        : id === 'capture' ? <CapturePage />
-                          : id === 'insights' ? <ForecastPage />
-                            : id === 'chat' ? <ChatPage />
-                              : id === 'settings' ? <SettingsPage />
-                                : id === 'readiness' ? <ReadinessPage />
-                                  : <Placeholder id={id} />
-                  } />
-                ))}
-                <Route path="/payments" element={<Navigate to="/payments/schedule" replace />} />
-                <Route path="/payments/schedule" element={<SchedulesPage />} />
-                <Route path="/payments/upcoming" element={<Navigate to="/payments/schedule" replace />} />
-                <Route path="/payments/owed" element={<Navigate to="/payments/owed-to-me" replace />} />
-                <Route path="/payments/owed-to-me" element={<OwedPage kind="to-me" />} />
-                <Route path="/payments/i-owe" element={<OwedPage kind="i-owe" />} />
-                <Route path="/budget" element={<BudgetPage />} />
-                <Route path="/schedules" element={<Navigate to="/payments/schedule" replace />} />
-                <Route path="/owed" element={<Navigate to="/payments/owed-to-me" replace />} />
-                <Route path="/more" element={<MorePage />} />
-                <Route path="*" element={<section className="surface-card p-8">
-                  <h1 tabIndex={-1} className="text-3xl font-semibold">{t('notFound')}</h1>
-                  <p className="my-4 text-muted-foreground">{t('notFoundBody')}</p>
-                  <Link className="text-primary underline" to="/">{t('back')}</Link>
-                </section>} />
-              </Routes>
+            <ErrorBoundary resetKey={location.pathname}>
+              <RouteFade
+                routeKey={
+                  location.pathname.startsWith('/payments')
+                    ? '/payments'
+                    : location.pathname
+                }
+              >
+                <Routes>
+                  <Route
+                    path="/transactions/new"
+                    element={<TransactionsPage />}
+                  />
+                  {screens
+                    .filter(({ id }) => id !== 'schedules' && id !== 'owed')
+                    .map(({ id, path }) => (
+                      <Route
+                        key={id}
+                        path={path}
+                        element={
+                          id === 'dashboard' ? (
+                            <DashboardPage />
+                          ) : id === 'transactions' ? (
+                            <TransactionsPage />
+                          ) : id === 'capture' ? (
+                            <CapturePage />
+                          ) : id === 'insights' ? (
+                            <ForecastPage />
+                          ) : id === 'settings' ? (
+                            <SettingsPage />
+                          ) : id === 'readiness' ? (
+                            <ReadinessPage />
+                          ) : (
+                            <Placeholder id={id} />
+                          )
+                        }
+                      />
+                    ))}
+                  <Route path="/payments" element={<PaymentsLayout />}>
+                    <Route index element={<Navigate to="schedule" replace />} />
+                    <Route path="schedule" element={<SchedulesPage />} />
+                    <Route
+                      path="upcoming"
+                      element={<Navigate to="/payments/schedule" replace />}
+                    />
+                    <Route
+                      path="owed"
+                      element={<Navigate to="/payments/owed-to-me" replace />}
+                    />
+                    <Route
+                      path="owed-to-me"
+                      element={<OwedPage kind="to-me" />}
+                    />
+                    <Route path="i-owe" element={<OwedPage kind="i-owe" />} />
+                  </Route>
+                  <Route path="/budget" element={<BudgetPage />} />
+                  <Route
+                    path="/schedules"
+                    element={<Navigate to="/payments/schedule" replace />}
+                  />
+                  <Route
+                    path="/owed"
+                    element={<Navigate to="/payments/owed-to-me" replace />}
+                  />
+                  <Route path="/more" element={<MorePage />} />
+                  <Route path="/chat" element={<FutureAIPage />} />
+                  <Route
+                    path="*"
+                    element={
+                      <section className="surface-card p-8">
+                        <h1 tabIndex={-1} className="text-3xl font-semibold">
+                          {t('notFound')}
+                        </h1>
+                        <p className="my-4 text-muted-foreground">
+                          {t('notFoundBody')}
+                        </p>
+                        <Link className="text-primary underline" to="/">
+                          {t('back')}
+                        </Link>
+                      </section>
+                    }
+                  />
+                </Routes>
+              </RouteFade>
             </ErrorBoundary>
           </main>
-          <nav className="mobile-bottom-nav lg:hidden" aria-label={t('navigation')}>
+          <SlidingSelector
+            as="nav"
+            className="mobile-bottom-nav lg:hidden"
+            aria-label={t('navigation')}
+            selectionKey={location.pathname}
+            selectedSelector=".mobile-tab-active"
+          >
             {primaryDestinations.map(({ id, path, icon: Icon }) => (
-              <NavLink key={id} to={path} end={path === '/'} className={({ isActive }) => {
-                const utilityPage = ['/chat', '/readiness', '/settings'].includes(location.pathname);
-                const active = isActive || (id === 'more' && utilityPage);
-                return `mobile-tab${active ? ' mobile-tab-active' : ''}`;
-              }}>
+              <NavLink
+                key={id}
+                to={path}
+                end={path === '/'}
+                className={({ isActive }) => {
+                  const utilityPage = [
+                    '/chat',
+                    '/readiness',
+                    '/settings',
+                  ].includes(location.pathname);
+                  const active = isActive || (id === 'more' && utilityPage);
+                  return `mobile-tab${active ? ' mobile-tab-active' : ''}`;
+                }}
+              >
                 <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
                 <span>{t(`${id}.nav`)}</span>
               </NavLink>
             ))}
-          </nav>
+          </SlidingSelector>
         </div>
       </div>
       {!isComposer ? (
         <>
-          {quickAddOpen ? (
+          {quickAddPresent ? (
             <>
-              <button type="button" className="quick-add-backdrop" aria-label={t('close')} onClick={() => { setQuickAddOpen(false); quickAddButtonRef.current?.focus(); }} />
-              <section ref={quickAddRef} className="quick-add-menu" role="dialog" aria-modal="true" aria-label={t('quickAdd.title')}>
-                <Link to="/transactions/new" className="quick-add-option" onClick={() => setQuickAddOpen(false)}>
-                  <span className="quick-add-icon"><ArrowLeftRight size={20} aria-hidden="true" /></span>
-                  <span><strong>{t('quickAdd.transaction')}</strong><small>{t('quickAdd.transactionHelp')}</small></span>
+              <button
+                type="button"
+                className="quick-add-backdrop"
+                data-state={quickAddOpen ? 'open' : 'closed'}
+                aria-hidden={!quickAddOpen}
+                disabled={!quickAddOpen}
+                aria-label={t('close')}
+                onClick={() => {
+                  setQuickAddOpen(false);
+                  quickAddButtonRef.current?.focus();
+                }}
+              />
+              <section
+                ref={quickAddRef}
+                className="quick-add-menu"
+                data-state={quickAddOpen ? 'open' : 'closed'}
+                aria-hidden={!quickAddOpen}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('quickAdd.title')}
+              >
+                <Link
+                  to="/transactions/new"
+                  className="quick-add-option"
+                  onClick={() => setQuickAddOpen(false)}
+                >
+                  <span className="quick-add-icon">
+                    <ArrowLeftRight size={20} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <strong>{t('quickAdd.transaction')}</strong>
+                    <small>{t('quickAdd.transactionHelp')}</small>
+                  </span>
                 </Link>
-                <Link to="/budget" className="quick-add-option" onClick={() => setQuickAddOpen(false)}>
-                  <span className="quick-add-icon"><CircleDollarSign size={20} aria-hidden="true" /></span>
-                  <span><strong>{t('quickAdd.budget')}</strong><small>{t('quickAdd.budgetHelp')}</small></span>
+                <Link
+                  to="/budget"
+                  className="quick-add-option"
+                  onClick={() => setQuickAddOpen(false)}
+                >
+                  <span className="quick-add-icon">
+                    <CircleDollarSign size={20} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <strong>{t('quickAdd.budget')}</strong>
+                    <small>{t('quickAdd.budgetHelp')}</small>
+                  </span>
                 </Link>
-                <Link to="/capture" className="quick-add-option" onClick={() => setQuickAddOpen(false)}>
-                  <span className="quick-add-icon"><Upload size={20} aria-hidden="true" /></span>
-                  <span><strong>{t('quickAdd.uploadReceipt')}</strong><small>{t('quickAdd.uploadReceiptHelp')}</small></span>
+                <Link
+                  to="/capture"
+                  className="quick-add-option"
+                  onClick={() => setQuickAddOpen(false)}
+                >
+                  <span className="quick-add-icon">
+                    <Upload size={20} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <strong>{t('quickAdd.uploadReceipt')}</strong>
+                    <small>{t('quickAdd.uploadReceiptHelp')}</small>
+                  </span>
                 </Link>
               </section>
             </>
@@ -333,11 +539,12 @@ export function App() {
             ref={quickAddButtonRef}
             type="button"
             className="global-add-button"
-            aria-label={t('quickAdd.open')}
+            data-open={quickAddOpen}
+            aria-label={quickAddOpen ? t('close') : t('quickAdd.open')}
             aria-expanded={quickAddOpen}
             onClick={() => setQuickAddOpen((open) => !open)}
           >
-            {quickAddOpen ? <X size={25} aria-hidden="true" /> : <Plus size={27} aria-hidden="true" />}
+            <Plus size={27} aria-hidden="true" />
           </button>
         </>
       ) : null}

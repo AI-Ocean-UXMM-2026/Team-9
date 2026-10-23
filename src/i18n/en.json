@@ -56,7 +56,7 @@
     "nav": "More",
     "title": "More tools",
     "eyebrow": "SUPPORTING TOOLS",
-    "description": "Ask AI about saved records or check record completeness."
+    "description": "Prepare your credit documents or manage your settings."
   },
   "prototype": "FRONTEND PROTOTYPE",
   "phase": "M8 · Demo and security",
@@ -208,7 +208,7 @@
     "nav": "Upload photo receipt",
     "description": "Upload a receipt or screenshot, then confirm its details before saving a record.",
     "uploadTitle": "Upload a receipt or screenshot",
-    "privacy": "Images stay in this tab and are never sent or stored. Only reviewed transaction fields are saved.",
+    "privacy": "Receipt text is read on your device. Images are not uploaded or stored; only the fields you review and save become records.",
     "upload": "Upload",
     "imageLabel": "JPEG, PNG, or WebP · up to 5 MB",
     "fileTypeError": "Choose a JPEG, PNG, or WebP image.",
@@ -217,11 +217,8 @@
     "previewAlt": "Local preview of the selected receipt or screenshot",
     "extract": "Extract fields",
     "manualFallback": "Fields unclear? Enter details manually",
-    "simulate": "Extract fields",
     "manual": "Enter details manually",
-    "sampleNotice": "Sample extraction · simulated, not OCR. These example fields may be wrong; review and correct each one.",
     "manualNotice": "Manual entry selected. Enter the details you can read from the uploaded image.",
-    "sampleDescription": "Sample receipt purchase",
     "chooseReviewMode": "Upload an image and extract its fields before reviewing.",
     "reviewTitle": "Review transaction fields",
     "reviewHelp": "",
@@ -230,10 +227,29 @@
     "saveReviewed": "Save reviewed transaction",
     "saved": "Reviewed transaction saved. The image was not stored.",
     "items": [
-      "Local image preview and simulated sample extraction",
+      "On-device receipt text recognition in English and Burmese",
       "Correct fields and confirm before saving",
       "Manual entry when extracted fields are unclear"
-    ]
+    ],
+    "ocrNotice": "Text extracted on your device. Review every field against the image. Missing or unclear fields are left blank.",
+    "extracting": "Extracting…",
+    "cancelExtraction": "Cancel extraction",
+    "language": "Receipt language",
+    "loading": "Loading local text recognition. The first scan may take a little longer.",
+    "reading": "Reading image",
+    "ocrError": "The image could not be read. Try a clearer image or enter the details manually.",
+    "missingFields": "Complete the transaction type, amount, date and payment status.",
+    "chooseType": "Choose income or expense",
+    "chooseStatus": "Choose payment status",
+    "detectedText": "Text detected in your image",
+    "warnings": {
+      "noText": "No readable text was detected. Try a sharper image.",
+      "lowConfidence": "Some text is unclear. Check each field carefully.",
+      "currency": "The MMK currency could not be confirmed. Enter the verified MMK amount manually.",
+      "amount": "A single clear total was not found. Enter the amount from the image.",
+      "date": "The date is missing or ambiguous. Enter the transaction date.",
+      "status": "Select whether the payment is settled or pending."
+    }
   },
   "owed": {
     "title": "Who owes what",
@@ -394,10 +410,9 @@
     ]
   },
   "readiness": {
-    "title": "Prepare your records",
-    "nav": "Record readiness",
-    "description": "Review record checks and your supporting-document checklist.",
-    "description": "Review how complete your records are and keep track of supporting documents.",
+    "title": "Credit readiness",
+    "nav": "Credit readiness",
+    "description": "Choose your bank, prepare supporting documents and export your FlowCredit report.",
     "disclaimer": "This checklist describes records you have entered or say you have available. It is not a credit score, creditworthiness assessment, or loan approval prediction. No document files are uploaded here.",
     "recordChecksTitle": "Record checks",
     "recordChecksHelp": "",

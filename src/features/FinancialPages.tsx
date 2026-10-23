@@ -1,3 +1,4 @@
+import { AccountSettings } from '../auth/AccountControls';
 import {
   useCallback,
   useEffect,
@@ -25,6 +26,8 @@ import {
 import { CategorySuggestion } from '../components/CategorySuggestion';
 import { ActivityCategoryIcon } from '../components/ActivityCategoryIcon';
 import { ActivityStatusIcon } from '../components/ActivityStatusIcon';
+import { SlidingSelector } from '../components/SlidingSelector';
+import { CollapsiblePanel } from '../components/Motion';
 import { calculateRecordedAvailableBalance } from '../domain/availableBalance';
 import {
   getReportingRange,
@@ -600,6 +603,7 @@ export function SettingsPage() {
       <header className="page-heading">
         <h1 tabIndex={-1}>{t('settings.title')}</h1>
       </header>
+      <AccountSettings />
       <section className="surface-card settings-panel">
         <label className="grid max-w-xl gap-2 text-sm font-medium">
           {t('settings.timeZone')}
@@ -832,14 +836,6 @@ export function SchedulesPage() {
   });
   return (
     <div className="payments-schedule-page">
-      <header className="page-heading">
-        <h1 tabIndex={-1}>{t('payments.title')}</h1>
-        <nav className="section-tabs" aria-label={t('payments.nav')}>
-          <Link className="section-tab section-tab-active" aria-current="page" to="/payments/schedule">{t('payments.schedule')}</Link>
-          <Link className="section-tab" to="/payments/owed-to-me">{t('payments.owedToMe')}</Link>
-          <Link className="section-tab" to="/payments/i-owe">{t('payments.iOwe')}</Link>
-        </nav>
-      </header>
       <div className="section-toolbar">
         <div>
           <h2>{t('schedules.list')}</h2>
@@ -849,7 +845,8 @@ export function SchedulesPage() {
           <Plus size={18} aria-hidden="true" />{t('schedules.add')}
         </button>
       </div>
-      <section id="schedule-form-panel" className={`schedule-form-panel surface-card${showScheduleForm ? ' schedule-form-panel-open' : ''}`} hidden={!showScheduleForm}>
+      <CollapsiblePanel open={showScheduleForm}>
+      <section id="schedule-form-panel" className="schedule-form-panel surface-card">
         <h2 className="text-xl font-semibold">{t('schedules.add')}</h2>
         <p className="mt-1 text-sm text-muted">{t('schedules.addHelp')}</p>
         <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={submit}>
@@ -967,6 +964,7 @@ export function SchedulesPage() {
           </div>
         </form>
       </section>
+      </CollapsiblePanel>
       <section className="surface-card schedule-list-panel" aria-label={t('schedules.list')}>
         {rows.length ? (
           <ul className="mt-4 divide-y divide-[#e4e9e2]">
@@ -1280,7 +1278,7 @@ export function TransactionsPage() {
           </div>
         ) : null}
         <form className="transaction-composer" onSubmit={submit}>
-          <div className="transaction-type-toggle" role="group" aria-label={t('transaction.type')}>
+          <SlidingSelector className="transaction-type-toggle" role="group" aria-label={t('transaction.type')} selectionKey={type}>
             <button
               type="button"
               className={`transaction-type-option${type === 'income' ? ' is-selected is-income' : ''}`}
@@ -1297,7 +1295,7 @@ export function TransactionsPage() {
             >
               <ArrowUp size={19} aria-hidden="true" />{t('transaction.expense')}
             </button>
-          </div>
+          </SlidingSelector>
 
           <label className={`composer-amount-field${type === 'income' ? ' amount-income' : ' amount-expense'}${amountLength > 8 ? ' composer-amount-extra-long' : amountLength > 5 ? ' composer-amount-long' : ''}`}>
             <span className="sr-only">{t('transaction.amount')}</span>
@@ -1326,14 +1324,14 @@ export function TransactionsPage() {
             ) : null}
             <fieldset className="composer-field composer-status-field">
               <legend>{t('transaction.status')}</legend>
-              <div className="composer-status-toggle">
+              <SlidingSelector className="composer-status-toggle" selectionKey={cashStatus}>
                 <button type="button" aria-pressed={cashStatus === 'settled'} className={cashStatus === 'settled' ? 'is-selected' : ''} onClick={() => setCashStatus('settled')}>
                   {t('transaction.settled')}
                 </button>
                 <button type="button" aria-pressed={cashStatus === 'pending'} className={cashStatus === 'pending' ? 'is-selected' : ''} onClick={() => setCashStatus('pending')}>
                   {t('transaction.pending')}
                 </button>
-              </div>
+              </SlidingSelector>
             </fieldset>
           </div>
 

@@ -227,9 +227,22 @@ const appDataShape = z.object({
   scheduleRules: z.array(scheduledRuleSchema).max(10_000),
   paymentOccurrences: z.array(paymentOccurrenceSchema).max(50_000),
   duplicateReviews: z.array(duplicateReviewSchema).max(50_000),
-  monthlyBudget: z.number().int().nonnegative().max(MMK_MAX).nullable().default(null),
+  monthlyBudget: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(MMK_MAX)
+    .nullable()
+    .default(null),
   categoryBudgets: z.array(categoryBudgetSchema).max(500).default([]),
   checklist: z.record(z.string().max(120), z.boolean()),
+  creditProfile: z
+    .object({
+      bankId: z.enum(['abank', 'yoma', 'mcb']),
+      applicantName: z.string().max(100),
+      businessName: z.string().max(100),
+    })
+    .optional(),
 });
 export const appDataSchema = appDataShape.superRefine((data, context) => {
   const unique = (items: readonly { id: string }[], path: string) => {
@@ -259,7 +272,13 @@ export const appDataSchema = appDataShape.superRefine((data, context) => {
         message: 'A category can have only one monthly budget.',
       });
     budgetCategories.add(budget.categoryId);
-    if (!data.categories.some((category) => category.id === budget.categoryId && (category.type === 'expense' || category.type === 'both')))
+    if (
+      !data.categories.some(
+        (category) =>
+          category.id === budget.categoryId &&
+          (category.type === 'expense' || category.type === 'both'),
+      )
+    )
       context.addIssue({
         code: 'custom',
         path: ['categoryBudgets', index, 'categoryId'],

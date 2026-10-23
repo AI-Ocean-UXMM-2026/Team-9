@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { CategorySuggestion } from '../components/CategorySuggestion';
+import { AnimatedDisclosure } from '../components/Motion';
+import type { ReceiptFields } from '../domain/receipt';
 import type { Transaction } from '../domain/types';
 import { clockForTimeZone, systemClock } from '../services/clock';
 import { dateInTimeZone } from '../services/timeZone';
@@ -23,13 +25,16 @@ export function CapturePage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const previewUrlRef = useRef<string | null>(null);
-  const [extraction, setExtraction] = useState<'sample' | 'manual' | null>(
-    null,
-  );
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [extraction, setExtraction] = useState<'ocr' | 'manual' | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [language, setLanguage] = useState<'eng' | 'eng+mya'>('eng+mya');
+  const [progress, setProgress] = useState({ phase: 'loading', progress: 0 });
+  const [detected, setDetected] = useState<ReceiptFields | null>(null);
+  const [type, setType] = useState<'income' | 'expense' | ''>('expense');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(today);
-  const [cashStatus, setCashStatus] = useState<'settled' | 'pending'>(
+  const [cashStatus, setCashStatus] = useState<'settled' | 'pending' | ''>(
     'settled',
   );
   const [dueDate, setDueDate] = useState('');
@@ -42,6 +47,7 @@ export function CapturePage() {
 
   useEffect(
     () => () => {
+      requestRef.current?.abort();
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     },
     [],
@@ -51,11 +57,18 @@ export function CapturePage() {
     (category) => category.type === type || category.type === 'both',
   );
   const openingDay = data.openingBalance
-    ? dateInTimeZone(data.openingBalance.referenceAt, data.openingBalance.timeZone)
+    ? dateInTimeZone(
+        data.openingBalance.referenceAt,
+        data.openingBalance.timeZone,
+      )
     : '';
-  const showOpeningChoice = Boolean(data.openingBalance && date === openingDay && cashStatus === 'settled');
+  const showOpeningChoice = Boolean(
+    data.openingBalance && date === openingDay && cashStatus === 'settled',
+  );
 
   function selectFile(candidate: File | undefined) {
+    cancelExtraction();
+    setDetected(null);
     setError('');
     setSaved(false);
     setExtraction(null);
@@ -83,22 +96,58 @@ export function CapturePage() {
     setFile(candidate);
   }
 
-  function useSampleExtraction() {
-    setExtraction('sample');
-    setType('expense');
-    setAmount('12500');
-    setDate(today);
-    setCashStatus('settled');
-    setDueDate('');
-    setCategoryId('');
-    setDescription(t('capture.sampleDescription'));
-    setOpeningDayDisposition('');
-    setReviewed(false);
+  function cancelExtraction() {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setExtracting(false);
+  }
+
+  async function extract() {
+    if (!file || extracting) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
     setError('');
     setSaved(false);
+    setExtraction(null);
+    setDetected(null);
+    setExtracting(true);
+    setProgress({ phase: 'loading', progress: 0 });
+    try {
+      const { extractReceiptLocally } = await import('../services/ocr');
+      if (controller.signal.aborted) return;
+      const result = await extractReceiptLocally(
+        file,
+        language,
+        controller.signal,
+        setProgress,
+      );
+      if (requestRef.current !== controller || controller.signal.aborted)
+        return;
+      setDetected(result);
+      setExtraction('ocr');
+      setType(result.type);
+      setAmount(result.amount === null ? '' : String(result.amount));
+      setDate(result.date);
+      setCashStatus(result.cashStatus);
+      setDueDate('');
+      setCategoryId('');
+      setDescription(result.description);
+      setOpeningDayDisposition('');
+      setReviewed(false);
+    } catch {
+      if (!controller.signal.aborted && requestRef.current === controller)
+        setError(t('capture.ocrError'));
+    } finally {
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        setExtracting(false);
+      }
+    }
   }
 
   function enterManually() {
+    cancelExtraction();
+    setDetected(null);
     setExtraction('manual');
     setType('expense');
     setAmount('');
@@ -123,6 +172,10 @@ export function CapturePage() {
     }
     if (!extraction) {
       setError(t('capture.chooseReviewMode'));
+      return;
+    }
+    if (!type || !cashStatus || !date) {
+      setError(t('capture.missingFields'));
       return;
     }
     if (
@@ -180,6 +233,7 @@ export function CapturePage() {
     setPreviewUrl('');
     setFile(null);
     setExtraction(null);
+    setDetected(null);
     setAmount('');
     setDate(today);
     setCashStatus('settled');
@@ -237,16 +291,39 @@ export function CapturePage() {
             ) : null}
           </div>
         ) : null}
+        <label className="mt-5 grid max-w-sm gap-2 text-sm font-medium">
+          {t('capture.language')}
+          <select
+            className="min-h-12 rounded-xl border border-[#bccbc0] bg-white px-3"
+            value={language}
+            disabled={extracting}
+            onChange={(event) =>
+              setLanguage(event.target.value as typeof language)
+            }
+          >
+            <option value="eng+mya">English + Burmese</option>
+            <option value="eng">English</option>
+          </select>
+        </label>
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             type="button"
-            disabled={!file}
+            disabled={!file || extracting}
             className="min-h-11 rounded-xl bg-accent px-4 font-semibold text-white disabled:opacity-50"
-            onClick={useSampleExtraction}
+            onClick={() => void extract()}
           >
-            {t('capture.extract')}
+            {t(extracting ? 'capture.extracting' : 'capture.extract')}
           </button>
-          {file && extraction === 'sample' ? (
+          {extracting ? (
+            <button
+              type="button"
+              className="pill-button"
+              onClick={cancelExtraction}
+            >
+              {t('capture.cancelExtraction')}
+            </button>
+          ) : null}
+          {file ? (
             <button
               type="button"
               className="min-h-11 rounded-xl border border-[#bccbc0] px-4 font-semibold"
@@ -256,16 +333,54 @@ export function CapturePage() {
             </button>
           ) : null}
         </div>
+        {extracting ? (
+          <div className="mt-4" role="status" aria-live="polite">
+            <p className="text-sm text-muted">
+              {t(`capture.${progress.phase}`)}
+              {progress.phase === 'reading'
+                ? ` ${Math.round(progress.progress * 100)}%`
+                : ''}
+            </p>
+            {progress.phase === 'reading' ? (
+              <progress
+                className="mt-2 h-2 w-full accent-[#0866e8]"
+                max={1}
+                value={progress.progress}
+                aria-label={t('capture.reading')}
+              />
+            ) : null}
+          </div>
+        ) : null}
         {extraction ? (
           <p className="mt-4 rounded-xl bg-[#edf3ec] p-4 text-sm" role="status">
             {t(
-              extraction === 'sample'
-                ? 'capture.sampleNotice'
+              extraction === 'ocr'
+                ? 'capture.ocrNotice'
                 : 'capture.manualNotice',
             )}
           </p>
         ) : null}
       </section>
+
+      {detected ? (
+        <div className="mt-4">
+          {detected.warnings.length ? (
+            <ul
+              className="mb-4 grid gap-1 rounded-xl bg-amber-50 p-4 text-sm text-amber-950"
+              role="status"
+            >
+              {detected.warnings.map((warning) => (
+                <li key={warning}>{t(`capture.warnings.${warning}`)}</li>
+              ))}
+            </ul>
+          ) : null}
+          <AnimatedDisclosure title={t('capture.detectedText')}>
+            <pre className="whitespace-pre-wrap break-words p-4 text-sm">
+              {detected.rawText || t('capture.warnings.noText')}
+            </pre>
+          </AnimatedDisclosure>
+        </div>
+      ) : null}
 
       {extraction ? (
         <section className="mt-6 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7">
@@ -276,12 +391,16 @@ export function CapturePage() {
               <select
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
                 value={type}
+                required
                 onChange={(event) => {
-                  setType(event.target.value as 'income' | 'expense');
+                  setType(event.target.value as 'income' | 'expense' | '');
                   setCategoryId('');
                   setReviewed(false);
                 }}
               >
+                <option value="" disabled>
+                  {t('capture.chooseType')}
+                </option>
                 <option value="expense">{t('transaction.expense')}</option>
                 <option value="income">{t('transaction.income')}</option>
               </select>
@@ -319,11 +438,15 @@ export function CapturePage() {
               <select
                 className="min-h-12 rounded-xl border border-[#bccbc0] px-3"
                 value={cashStatus}
+                required
                 onChange={(event) => {
                   setCashStatus(event.target.value as 'settled' | 'pending');
                   setReviewed(false);
                 }}
               >
+                <option value="" disabled>
+                  {t('capture.chooseStatus')}
+                </option>
                 <option value="settled">{t('transaction.settled')}</option>
                 <option value="pending">{t('transaction.pending')}</option>
               </select>
@@ -363,16 +486,18 @@ export function CapturePage() {
               </select>
             </label>
             <div>
-              <CategorySuggestion
-                description={description}
-                type={type}
-                categories={categories}
-                selectedCategoryId={categoryId}
-                onApply={(suggestion) => {
-                  setCategoryId(suggestion);
-                  setReviewed(false);
-                }}
-              />
+              {type ? (
+                <CategorySuggestion
+                  description={description}
+                  type={type}
+                  categories={categories}
+                  selectedCategoryId={categoryId}
+                  onApply={(suggestion) => {
+                    setCategoryId(suggestion);
+                    setReviewed(false);
+                  }}
+                />
+              ) : null}
             </div>
             <label className="grid gap-2 text-sm font-medium sm:col-span-2">
               {t('transaction.description')}

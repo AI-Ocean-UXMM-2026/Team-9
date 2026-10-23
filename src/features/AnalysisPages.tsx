@@ -1,12 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { SendHorizontal } from 'lucide-react';
 import { ActivityCategoryIcon } from '../components/ActivityCategoryIcon';
 import { ActivityStatusIcon } from '../components/ActivityStatusIcon';
+import { AnimatedDisclosure } from '../components/Motion';
 import {
-  answerRecordedQuestion,
   buildRuleInsights,
   duplicateReviewId,
   findPossibleDuplicates,
@@ -52,17 +51,13 @@ export function OwedPage({ kind }: { kind: 'to-me' | 'i-owe' }) {
   const summary = summarizeOutstanding(data, today);
   return (
     <>
-      <header className="page-heading">
-        <h1 tabIndex={-1}>{t('payments.title')}</h1>
-        <nav className="section-tabs" aria-label={t('payments.nav')}>
-          <Link className="section-tab" to="/payments/schedule">{t('payments.schedule')}</Link>
-          <Link className={`section-tab${kind === 'to-me' ? ' section-tab-active' : ''}`} aria-current={kind === 'to-me' ? 'page' : undefined} to="/payments/owed-to-me">{t('payments.owedToMe')}</Link>
-          <Link className={`section-tab${kind === 'i-owe' ? ' section-tab-active' : ''}`} aria-current={kind === 'i-owe' ? 'page' : undefined} to="/payments/i-owe">{t('payments.iOwe')}</Link>
-        </nav>
-      </header>
       <SummaryCard
-        title={kind === 'to-me' ? t('owed.receivableTotal') : t('owed.payableTotal')}
-        amount={kind === 'to-me' ? summary.receivableTotal : summary.payableTotal}
+        title={
+          kind === 'to-me' ? t('owed.receivableTotal') : t('owed.payableTotal')
+        }
+        amount={
+          kind === 'to-me' ? summary.receivableTotal : summary.payableTotal
+        }
         tone={kind === 'to-me' ? 'income' : 'expense'}
       />
       {summary.unconfirmedPaidCount > 0 ? (
@@ -112,7 +107,8 @@ function SummaryCard({
     <article className={`owed-total-card owed-total-card-${tone}`}>
       <p className="owed-total-label">{title}</p>
       <p className="owed-total-amount">
-        {tone === 'income' ? '+' : '−'}{money(amount)} <span>MMK</span>
+        {tone === 'income' ? '+' : '−'}
+        {money(amount)} <span>MMK</span>
       </p>
     </article>
   );
@@ -140,7 +136,9 @@ function OutstandingList({
       {items.length ? (
         <ul className="owed-record-list">
           {items.map(({ transaction, dueDate, overdue }) => {
-            const categoryName = t(`category.${transaction.categoryId ?? 'uncategorized'}`);
+            const categoryName = t(
+              `category.${transaction.categoryId ?? 'uncategorized'}`,
+            );
             return (
               <li
                 key={transaction.id}
@@ -152,8 +150,11 @@ function OutstandingList({
                   </span>
                   <div className="owed-record-copy">
                     <p className="owed-record-description">{categoryName}</p>
-                    {transaction.description && transaction.description !== categoryName ? (
-                      <p className="owed-record-note">{transaction.description}</p>
+                    {transaction.description &&
+                    transaction.description !== categoryName ? (
+                      <p className="owed-record-note">
+                        {transaction.description}
+                      </p>
                     ) : null}
                     <div className="owed-record-meta">
                       <span>
@@ -165,14 +166,20 @@ function OutstandingList({
                           {overdueLabel}
                         </span>
                       ) : (
-                        <ActivityStatusIcon status="pending" label={t('owed.upcoming')} />
+                        <ActivityStatusIcon
+                          status="pending"
+                          label={t('owed.upcoming')}
+                        />
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="owed-record-actions">
-                  <strong className={`owed-record-amount owed-record-amount-${tone}`}>
-                    {tone === 'income' ? '+' : '−'}{money(transaction.amount)} MMK
+                  <strong
+                    className={`owed-record-amount owed-record-amount-${tone}`}
+                  >
+                    {tone === 'income' ? '+' : '−'}
+                    {money(transaction.amount)} MMK
                   </strong>
                   <Link
                     className="owed-update-button"
@@ -256,16 +263,19 @@ function ForecastChart({ forecast }: { forecast: CashFlowForecast }) {
     expected: day.closingBalance,
     delayed: forecast.lateInflows.days[index]?.closingBalance ?? null,
   }));
-  const values = series.flatMap((point) => [point.expected, point.delayed])
+  const values = series
+    .flatMap((point) => [point.expected, point.delayed])
     .filter((value): value is number => value !== null);
   const rawMin = Math.min(0, ...values);
   const rawMax = Math.max(0, ...values);
   const spread = rawMax - rawMin;
-  const padding = spread === 0 ? Math.max(1, Math.abs(rawMax) * 0.12) : spread * 0.12;
+  const padding =
+    spread === 0 ? Math.max(1, Math.abs(rawMax) * 0.12) : spread * 0.12;
   const min = rawMin - padding;
   const max = rawMax + padding;
   const x = (index: number) =>
-    plot.left + (series.length <= 1 ? 0 : index / (series.length - 1)) * plotWidth;
+    plot.left +
+    (series.length <= 1 ? 0 : index / (series.length - 1)) * plotWidth;
   const y = (value: number) =>
     plot.top + ((max - value) / (max - min)) * plotHeight;
   const makePath = (key: 'expected' | 'delayed') => {
@@ -284,13 +294,18 @@ function ForecastChart({ forecast }: { forecast: CashFlowForecast }) {
       .filter(Boolean)
       .join(' ');
   };
-  const ticks = Array.from({ length: 5 }, (_, index) => max - (index / 4) * (max - min));
-  const labelIndexes = [...new Set([
-    0,
-    Math.floor((series.length - 1) / 3),
-    Math.floor(((series.length - 1) * 2) / 3),
-    series.length - 1,
-  ])];
+  const ticks = Array.from(
+    { length: 5 },
+    (_, index) => max - (index / 4) * (max - min),
+  );
+  const labelIndexes = [
+    ...new Set([
+      0,
+      Math.floor((series.length - 1) / 3),
+      Math.floor(((series.length - 1) * 2) / 3),
+      series.length - 1,
+    ]),
+  ];
   const compactAmount = (value: number) =>
     new Intl.NumberFormat('en-US', {
       notation: 'compact',
@@ -300,51 +315,102 @@ function ForecastChart({ forecast }: { forecast: CashFlowForecast }) {
     <section className="forecast-chart-panel">
       <header className="forecast-chart-header">
         <h2>{t('forecast.dailyTitle')}</h2>
-        <span>{forecast.startDate} – {forecast.endDate}</span>
+        <span>
+          {forecast.startDate} – {forecast.endDate}
+        </span>
       </header>
       <div className="forecast-chart-scroll">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="forecast-chart"
           role="img"
-          aria-label={t('forecast.chartAccessible', { start: forecast.startDate, end: forecast.endDate })}
+          aria-label={t('forecast.chartAccessible', {
+            start: forecast.startDate,
+            end: forecast.endDate,
+          })}
         >
-          <text x={plot.left} y="13" className="forecast-chart-unit">MMK</text>
+          <text x={plot.left} y="13" className="forecast-chart-unit">
+            MMK
+          </text>
           {ticks.map((value, index) => {
             const tickY = plot.top + (index / 4) * plotHeight;
             return (
               <g key={index}>
-                <line x1={plot.left} y1={tickY} x2={width - plot.right} y2={tickY} className="forecast-grid-line" />
-                <text x={plot.left - 11} y={tickY + 4} textAnchor="end" className="forecast-axis-label">{compactAmount(value)}</text>
+                <line
+                  x1={plot.left}
+                  y1={tickY}
+                  x2={width - plot.right}
+                  y2={tickY}
+                  className="forecast-grid-line"
+                />
+                <text
+                  x={plot.left - 11}
+                  y={tickY + 4}
+                  textAnchor="end"
+                  className="forecast-axis-label"
+                >
+                  {compactAmount(value)}
+                </text>
               </g>
             );
           })}
-          <path d={makePath('delayed')} className="forecast-line forecast-line-delayed" />
-          <path d={makePath('expected')} pathLength={1} className="forecast-line forecast-line-expected" />
+          <path
+            d={makePath('delayed')}
+            className="forecast-line forecast-line-delayed"
+          />
+          <path
+            d={makePath('expected')}
+            pathLength={1}
+            className="forecast-line forecast-line-expected"
+          />
           {series.map((point, index) => (
             <g key={point.date}>
               {point.delayed !== null ? (
-                <circle cx={x(index)} cy={y(point.delayed)} r="4" className="forecast-point forecast-point-delayed" style={{ animationDelay: `${220 + index * 28}ms` }}>
+                <circle
+                  cx={x(index)}
+                  cy={y(point.delayed)}
+                  r="4"
+                  className="forecast-point forecast-point-delayed"
+                  style={{ animationDelay: `${220 + index * 28}ms` }}
+                >
                   <title>{`${t('forecast.lateCase')}: ${point.date}, ${money(point.delayed)} MMK`}</title>
                 </circle>
               ) : null}
               {point.expected !== null ? (
-                <circle cx={x(index)} cy={y(point.expected)} r="4" className="forecast-point forecast-point-expected" style={{ animationDelay: `${220 + index * 28}ms` }}>
+                <circle
+                  cx={x(index)}
+                  cy={y(point.expected)}
+                  r="4"
+                  className="forecast-point forecast-point-expected"
+                  style={{ animationDelay: `${220 + index * 28}ms` }}
+                >
                   <title>{`${t('forecast.baseCase')}: ${point.date}, ${money(point.expected)} MMK`}</title>
                 </circle>
               ) : null}
             </g>
           ))}
           {labelIndexes.map((index) => (
-            <text key={index} x={x(index)} y={height - 13} textAnchor="middle" className="forecast-axis-label">
+            <text
+              key={index}
+              x={x(index)}
+              y={height - 13}
+              textAnchor="middle"
+              className="forecast-axis-label"
+            >
               {series[index]?.date.slice(5)}
             </text>
           ))}
         </svg>
       </div>
       <div className="forecast-chart-legend" aria-hidden="true">
-        <span><i className="forecast-legend-expected" />{t('forecast.baseCase')}</span>
-        <span><i className="forecast-legend-delayed" />{t('forecast.lateCase')}</span>
+        <span>
+          <i className="forecast-legend-expected" />
+          {t('forecast.baseCase')}
+        </span>
+        <span>
+          <i className="forecast-legend-delayed" />
+          {t('forecast.lateCase')}
+        </span>
       </div>
     </section>
   );
@@ -357,8 +423,7 @@ function RuleInsightsPanel() {
   const today = clockForTimeZone(timeZone).today();
   const insights = buildRuleInsights(data, today);
   return (
-    <details className="insight-secondary-panel">
-      <summary>{t('insights.ruleTitle')}</summary>
+    <AnimatedDisclosure title={t('insights.ruleTitle')}>
       <div className="insight-secondary-content">
         <p className="mt-1 text-sm text-muted">{t('insights.ruleHelp')}</p>
         {insights.length ? (
@@ -407,7 +472,7 @@ function RuleInsightsPanel() {
           <p className="mt-4 text-muted">{t('insights.noSignals')}</p>
         )}
       </div>
-    </details>
+    </AnimatedDisclosure>
   );
 }
 
@@ -446,10 +511,11 @@ function DuplicateReviewPanel() {
   }
 
   return (
-    <details className="insight-secondary-panel">
-      <summary>{t('insights.duplicateReviewTitle')}</summary>
+    <AnimatedDisclosure title={t('insights.duplicateReviewTitle')}>
       <div className="insight-secondary-content">
-        <p className="mt-1 text-sm text-muted">{t('insights.duplicatesHelp')}</p>
+        <p className="mt-1 text-sm text-muted">
+          {t('insights.duplicatesHelp')}
+        </p>
         {candidates.length ? (
           <ul className="mt-4 divide-y divide-[#e4e9e2]">
             {candidates.map((candidate) => (
@@ -530,83 +596,7 @@ function DuplicateReviewPanel() {
           <p className="mt-4 text-muted">{t('insights.noDuplicates')}</p>
         )}
       </div>
-    </details>
-  );
-}
-
-export function ChatPage() {
-  const { t } = useTranslation();
-  const data = useDemoStore((state) => state.data);
-  const timeZone = useDemoStore((state) => state.timeZone);
-  const today = clockForTimeZone(timeZone).today();
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState<ReturnType<
-    typeof answerRecordedQuestion
-  > | null>(null);
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    setAnswer(answerRecordedQuestion(data, today, question));
-  }
-  return (
-    <div className="chat-page">
-      <header className="page-heading">
-        <h1 tabIndex={-1}>{t('chat.title')}</h1>
-      </header>
-      <p className="mb-5 rounded-xl bg-[#edf3ec] p-4 text-sm text-muted">
-        {t('chat.limits')}
-      </p>
-      {answer ? (
-        <section
-          className="mt-5 rounded-3xl border border-[#dce4dc] bg-white p-5 sm:p-7"
-          aria-live="polite"
-        >
-          <h2 className="font-semibold">{t('chat.answerTitle')}</h2>
-          <p className="mt-2">
-            {t(answer.messageKey, translationValues(answer.values, t))}
-          </p>
-          {answer.evidence.length ? (
-            <div className="mt-4 border-t border-[#e4e9e2] pt-4">
-              <h3 className="text-sm font-semibold">{t('chat.evidence')}</h3>
-              <ul className="mt-2 space-y-2 text-sm text-muted">
-                {answer.evidence.map((item) => (
-                  <li key={item.id}>
-                    {t('insights.evidenceRow', {
-                      description: item.descriptionKey
-                        ? t(`insights.${item.descriptionKey}`)
-                        : item.description || t('insights.unnamedRecord'),
-                      date: item.date,
-                      amount: money(item.amount),
-                      due: item.dueDate
-                        ? t('insights.evidenceDueDate', { date: item.dueDate })
-                        : '',
-                    })}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-      <form className="chat-composer" onSubmit={submit}>
-        <label className="sr-only" htmlFor="chat-question">
-          {t('chat.questionLabel')}
-        </label>
-        <div className="chat-input-wrap">
-          <input
-            id="chat-question"
-            className="chat-input"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            maxLength={300}
-            placeholder={t('chat.questionPlaceholder')}
-            required
-          />
-        </div>
-        <button className="chat-send" aria-label={t('chat.ask')}>
-          <SendHorizontal size={20} aria-hidden="true" />
-        </button>
-      </form>
-    </div>
+    </AnimatedDisclosure>
   );
 }
 
@@ -636,7 +626,9 @@ function ForecastSummaryCard({
       <p className="forecast-summary-amount">
         {money(minimum)} <span>MMK</span>
       </p>
-      <p className={`forecast-summary-status${shortfall ? ' forecast-summary-shortfall' : ''}`}>
+      <p
+        className={`forecast-summary-status${shortfall ? ' forecast-summary-shortfall' : ''}`}
+      >
         {shortfall
           ? t('forecast.shortfall', { amount: money(shortfall) })
           : shortfallLabel}

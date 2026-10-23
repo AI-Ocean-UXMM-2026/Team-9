@@ -40,6 +40,7 @@ export interface DemoStore extends PersistedStore {
   markOccurrenceUnpaid(occurrenceId: string): void;
   resolveDuplicate(review: DuplicateReview): void;
   setReadinessDocument(id: ReadinessDocumentId, available: boolean): void;
+  setCreditProfile(profile: NonNullable<AppData['creditProfile']>): void;
   dismissStorageNotice(): void;
 }
 
@@ -77,6 +78,9 @@ export function createDemoStore(
           const validated = appDataSchema.parse(data);
           set({ data: validated });
         },
+        setCreditProfile: (creditProfile) => {
+          set({ data: appDataSchema.parse({ ...get().data, creditProfile }) });
+        },
         setOpeningBalance: (openingBalance) => {
           const validated = appDataSchema.parse({
             ...get().data,
@@ -86,11 +90,15 @@ export function createDemoStore(
         },
         setMonthlyBudget: (amount) => {
           const current = get().data;
-          set({ data: appDataSchema.parse({ ...current, monthlyBudget: amount }) });
+          set({
+            data: appDataSchema.parse({ ...current, monthlyBudget: amount }),
+          });
         },
         setCategoryBudget: (categoryId, amount) => {
           const current = get().data;
-          const categoryBudgets = current.categoryBudgets.filter((item) => item.categoryId !== categoryId);
+          const categoryBudgets = current.categoryBudgets.filter(
+            (item) => item.categoryId !== categoryId,
+          );
           if (amount !== null) categoryBudgets.push({ categoryId, amount });
           set({ data: appDataSchema.parse({ ...current, categoryBudgets }) });
         },

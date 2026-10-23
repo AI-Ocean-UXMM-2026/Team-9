@@ -8,7 +8,8 @@ export const readinessDocumentIds = [
   'identity_document',
 ] as const;
 
-export type ReadinessDocumentId = (typeof readinessDocumentIds)[number];
+export type ReadinessDocumentId =
+  (typeof readinessDocumentIds)[number] | `credit:${string}`;
 
 export type RecordCheckId =
   | 'opening_balance'

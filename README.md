@@ -1,6 +1,12 @@
 # FinTech Companion
 
-A frontend prototype for everyday financial records in Myanmar. M7 adds record-completeness checks, a user-controlled supporting-document checklist and optional keyword category suggestions. This describes record completeness only, not creditworthiness or loan approval. M8 completes browser acceptance coverage, security policy checks and a synthetic-data demo guide. Earlier milestones provide period reports, evidence-based insights, duplicate review, grounded chat, local receipt/screenshot review, manual records, and one-time/monthly schedules. Images stay in the browser tab and are discarded after review; no OCR service is used. Future schedule items remain forecast-only, and unpaid items stay unpaid across reloads. Records stay in validated, versioned browser storage. Never enter real financial information.
+A local financial records app for everyday bookkeeping in Myanmar. It provides income and expense records, one-time and monthly schedules, payment confirmation, budgets, forecasts and bank-specific Credit Readiness checklists. Receipt text recognition runs on the device in English and Burmese using Tesseract.js; every extracted record requires user review. Ask AI remains a demo interface using local record rules; there is no external AI API connection. Registration and sign-in use a Node backend and SQLite database with hashed passwords and cookie sessions. Financial records are saved per account, with a separate browser cache for each user.
+
+## Credit readiness
+
+Choose **A Bank**, **Yoma Bank** or **MCB Bank** under More → Credit readiness. Each bank has six document preparation groups with independent saved status. Financial coverage updates from saved settled records; pending, future and assumed unconfirmed payments are excluded. Each group contributes equally to preparation progress. Document availability is self-reported, while supporting financial summaries use month coverage (12 months for A Bank/Yoma, 36 for MCB). Coverage indicates months containing records, not proof that accounts are complete.
+
+**Export Loan Application Kit** downloads a one-page A4 PDF with the latest 12 months of recorded cash flow, the selected checklist, source counts and coverage. Applicant/business names are optional. Exports are generated locally; no provider API key is required. The PDF is a user-prepared supporting summary, without audit, bank verification, certification, guaranteed acceptance or a creditworthiness assessment. Keep original documents and confirm requirements with the branch. A Bank uses the owner's approved team draft; Yoma and MCB include links to published reference requirements.
 
 ## Run locally
 
@@ -11,7 +17,15 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. For production: `npm run build`, then `npm run preview`. Build output is `dist/`; deploy to a static host. Hash URLs work without server rewrite rules. No environment variables or secrets are needed.
+Open the local URL printed by Vite. `npm run dev` starts the account backend on port 3001 and the Vite frontend together. For the built app: `npm run build`, then `npm start` and open http://127.0.0.1:3001. Real accounts require the Node backend; static hosting alone cannot provide login or record sync. No provider API keys are needed. `predev` and `prebuild` copy the locked OCR engine and language packages into `public/ocr/`, so production scans use assets from the app origin without a CDN. The first scan loads the selected recognition data. Keep `dist/ocr/` with the deployed build.
+
+## Accounts and database
+
+The landing page is public. Get started gathers the example transaction cards into the brand before revealing registration; Sign in opens the existing-account form. Protected app routes require a server session. Passwords use salted scrypt hashes; session tokens are random, stored as hashes on the server and sent in HttpOnly, SameSite=Strict cookies. Sign-out invalidates the session. Settings includes password-confirmed account deletion.
+
+SQLite stores users, sessions and each account’s financial workspace at `.data/fintech.sqlite` (ignored by Git). Keep this directory on persistent storage and back it up. Server records are separated by authenticated user ID. Existing pre-account browser records are preserved and offered for explicit import into an empty account. Pending local sync is retried on sign-in; the interface shows saving/failure status.
+
+For deployment, serve the built frontend and API from the same origin, use HTTPS, set `NODE_ENV=production` and `APP_ORIGIN` to the exact public origin, and configure `API_HOST` / `API_PORT` for your host. The default API binds only to localhost. `DATA_DIR` can choose a persistent database directory. Email verification, password reset email, MFA and a production security review remain future deployment work.
 
 ## Verify
 
@@ -34,7 +48,7 @@ The reviewer-ready acceptance cases for completed milestones are in [TEST_CASES.
 
 `src/app` composes routing and layout; `src/components` shared UI; `src/features` financial screens and remaining placeholders; `src/store` validated Zustand persistence; `src/domain` Zod data contracts and pure balance and schedule lifecycle logic; `src/services` injected clock; `src/i18n` English and Burmese skeleton; `e2e` browser checks. React 18, TypeScript, Vite, Tailwind, React Router, lucide-react, react-i18next, Zustand and Zod power the prototype.
 
-The navigation covers dashboard, transactions, upload/review, owed payments, schedules, forecast/insights, assistant, readiness and settings. The dashboard and settings support the opening balance; transactions supports manual records, optional category suggestions and linked correction workflows; upload/review validates local image files, offers optional category suggestions and saves only user-confirmed fields; schedules supports one-time and monthly payments and the shared occurrence lifecycle; owed payments separates receivables and payables; forecast/insights shows projections, rule-based signals and duplicate review; the assistant answers a bounded set of questions from records; readiness shows record checks and a user-maintained document checklist without uploading documents or assessing creditworthiness. Mobile uses an expandable menu. No seeded financial figures or live connections appear.
+The navigation covers dashboard, transactions, upload/review, owed payments, schedules, forecast/insights, credit readiness and settings. The dashboard and settings support the opening balance; transactions supports manual records, optional category suggestions and linked correction workflows; upload/review validates local image files, offers optional category suggestions and saves only user-confirmed fields; schedules supports one-time and monthly payments and the shared occurrence lifecycle; owed payments separates receivables and payables; forecast/insights shows projections, rule-based signals and duplicate review; credit readiness shows bank-specific document preparation, financial record coverage and a local PDF export. Mobile uses an expandable menu. No seeded financial figures or live connections appear.
 
 ## Product behavior and next work
 

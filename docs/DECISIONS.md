@@ -1,3 +1,13 @@
+## Owner update - accounts and Ask AI demo
+
+The owner requested an animated public landing page, real registration/login and a registered-user database. The implementation uses local Node/SQLite, scrypt password hashes, HttpOnly cookie sessions and authenticated per-user record sync. The user clarified that Ask AI must remain under More with exactly that label and a demo interface, without a provider API connection. These decisions supersede earlier assistant removal and no-account scope notes.
+
+## Owner update - 2026-10-23
+
+The owner replaced the earlier mock-only OCR scope with real, on-device receipt recognition and dropped the AI assistant. No shared provider API key or remote receipt processing is used. Local OCR uses English/Burmese Tesseract data, requires explicit extraction, leaves uncertain fields empty and requires review before saving.
+
+Credit Readiness now selects A Bank, Yoma or MCB, persists six checklist groups per bank, auto-matches supporting record coverage and exports a one-page financial summary. The owner explicitly chose to retain A Bank with the team's draft checklist. Bank acceptance of app-generated substitutes has not been established; neither verified certification nor a lending score is claimed. Preparation percentages equally weight six groups, combining self-reported document availability with measured month coverage. Financial totals exclude pending, future and unconfirmed payments. Reports disclose source counts, coverage and possible duplicates. These decisions supersede the historical mock-only, no-export and grounded-chat wording below.
+
 # Decisions and reconciliation
 
 Updated 22 October 2026. The user's latest pasted request is authoritative; supplied documents are reference material. M0 through M8 are complete; review M8 before any P2 scope is considered.

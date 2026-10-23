@@ -19,5 +19,5 @@
     "noEmit": true,
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "*.ts", "e2e"]
+  "include": ["src", "server", "*.ts", "e2e"]
 }

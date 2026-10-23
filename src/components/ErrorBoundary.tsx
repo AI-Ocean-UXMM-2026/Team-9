@@ -1,12 +1,17 @@
 import { Component, type ReactNode } from 'react';
 import i18n from '../i18n';
 export class ErrorBoundary extends Component<
-  { children: ReactNode },
+  { children: ReactNode; resetKey?: string },
   { failed: boolean }
 > {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+  componentDidUpdate(previousProps: Readonly<{ children: ReactNode; resetKey?: string }>) {
+    if (this.state.failed && previousProps.resetKey !== this.props.resetKey) {
+      this.setState({ failed: false });
+    }
   }
   render() {
     if (this.state.failed)

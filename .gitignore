@@ -1,7 +1,11 @@
 node_modules/
+.data/
 dist/
+public/ocr/
 coverage/
 playwright-report/
 test-results/
 .env*
 !.env.example
+
+tmp/pdfs/

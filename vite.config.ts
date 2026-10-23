@@ -6,6 +6,16 @@ import { fileURLToPath } from 'node:url';
 const root = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   base: './',
+  server: {
+    proxy: {
+      '/api': { target: `http://127.0.0.1:${process.env.API_PORT || 3001}` },
+    },
+  },
+  preview: {
+    proxy: {
+      '/api': { target: `http://127.0.0.1:${process.env.API_PORT || 3001}` },
+    },
+  },
   resolve: {
     alias: { '@': path.resolve(root, 'src') },
   },

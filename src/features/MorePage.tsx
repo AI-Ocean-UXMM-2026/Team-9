@@ -1,4 +1,9 @@
-import { ClipboardCheck, MessageCircle, Settings, ArrowRight } from 'lucide-react';
+import {
+  ClipboardCheck,
+  Settings,
+  ArrowRight,
+  MessageCircle,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -18,8 +23,12 @@ export function MorePage() {
       <div className="utility-grid">
         {items.map(({ id, path, icon: Icon }) => (
           <Link className="utility-card" key={id} to={path}>
-            <span className="utility-icon"><Icon size={21} strokeWidth={1.8} aria-hidden="true" /></span>
-            <span className="utility-copy"><strong>{t(`${id}.nav`)}</strong></span>
+            <span className="utility-icon">
+              <Icon size={21} strokeWidth={1.8} aria-hidden="true" />
+            </span>
+            <span className="utility-copy">
+              <strong>{t(`${id}.nav`)}</strong>
+            </span>
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
         ))}
