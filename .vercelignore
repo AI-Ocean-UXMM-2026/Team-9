@@ -1,0 +1,16 @@
+.git/
+.agents/
+.codex/
+.data/
+.env*
+node_modules/
+dist/
+public/ocr/
+Video_and_Slide/
+tmp/
+test-results/
+playwright-report/
+coverage/
+docs/
+skills-lock.json
+codex-master-prompt.md

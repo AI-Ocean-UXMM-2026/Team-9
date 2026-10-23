@@ -26,6 +26,14 @@ Open the local URL printed by Vite. `npm run dev` starts the account backend on 
 
 ## Accounts and database
 
+### Vercel production deployment
+
+The hosted app runs its frontend and `/api/*` endpoints together on Vercel. Production account data is stored in Neon Postgres (Singapore region), connected through Vercel Marketplace. `api/index.ts` exports the shared API handler; `vercel.json` routes API requests to this function. `server/database.ts` uses `DATABASE_URL` (or `POSTGRES_URL`) for Neon and keeps SQLite for local development when neither is configured. Existing local SQLite account data is not automatically uploaded to Neon.
+
+Connect Neon to the Vercel project, set `APP_ORIGIN` to the exact public app origin (comma-separated for additional approved domains), then deploy with `npx vercel --prod`. The API initializes its tables automatically. `/api/health` reports database connectivity. Session cookies remain HttpOnly, SameSite=Strict and Secure in production; account data, session hashes and request limits persist in Postgres across function instances. Database credentials stay in Vercel environment variables; `.env*`, `.vercel/` and local SQLite files are excluded from Git and deployment uploads. Never use a `VITE_` variable for database credentials.
+
+The Neon database is provisioned on its Free plan; its provider limits apply. A production database is configured for production and development, while preview deployments need a separate database connection and explicitly approved origin before account flows are available. Vercel's function request-size limit also applies to API uploads.
+
 The header includes an **English / မြန်မာ** language selector for guest demos and account workspaces, also available on the public landing and sign-in pages. The choice persists in this browser. Burmese covers the main screens, categories, forms, controls and demo guide, with English fallback for remaining specialist copy. Brand and bank names, user-entered descriptions, dates and MMK amounts retain their original form. Exported bank preparation PDFs remain in English.
 
 The landing page is public. Get started gathers the example transaction cards into the brand before revealing registration; Sign in opens the existing-account form. Account workspaces require a server session. Passwords use salted scrypt hashes; session tokens are random, stored as hashes on the server and sent in HttpOnly, SameSite=Strict cookies. Sign-out invalidates the session. Settings includes password-confirmed account deletion.
